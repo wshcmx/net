@@ -27,7 +27,7 @@ jobs:
       - name: Run Tests
         run: dotnet test --configuration Release --no-build --verbosity normal
       - name: Publish Application
-        run: dotnet publish src/wshcmx -r ${{ matrix.runtime }} -c Release -o ./publish/${{ matrix.runtime }}
+        run: dotnet publish src/wshcmx -r ${{ matrix.runtime }} -c Release --self-contained true -o ./publish/${{ matrix.runtime }}
       - name: Create ZIP Archives
         run: |
           cd ./publish/${{ matrix.runtime }}
