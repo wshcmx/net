@@ -31,7 +31,7 @@ jobs:
       - name: Create ZIP Archives
         run: |
           cd ./publish/${{ matrix.runtime }}
-          zip -r ../../dotnet-app-${{ matrix.runtime }}.zip ./*
+          zip -r ../../wshcmx-${{ matrix.runtime }}.zip ./*
           cd ../..
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
