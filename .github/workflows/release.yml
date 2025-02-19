@@ -31,13 +31,14 @@ jobs:
       - name: Create ZIP Archives
         run: |
           cd ./publish/${{ matrix.runtime }}
-          zip -r ../../wshcmx-${{ matrix.runtime }}.zip ./*
+          zip -r ../../dotnet-app-${{ matrix.runtime }}.zip ./*
           cd ../..
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: wshcmx-${{ matrix.runtime }}
-          path: ./publish/wshcmx-${{ matrix.runtime }}.zip
+        with:
+          name: wshcmx-${{ matrix.runtime }}.zip
+          path: wshcmx-${{ matrix.runtime }}.zip
   release:
     name: Create GitHub Release
     needs: build
