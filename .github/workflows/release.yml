@@ -54,6 +54,6 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
           body: "Automated release for ${{ github.ref_name }}."
-          files: ./release/wshcmx-*.zip
+          files: ./release/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
