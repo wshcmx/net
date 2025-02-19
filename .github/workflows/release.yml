@@ -48,8 +48,6 @@ jobs:
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
-        permissions:
-          contents: write
         with:
           files: ./release/**
           tag_name: ${{ github.ref_name }}
