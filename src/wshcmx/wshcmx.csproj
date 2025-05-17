@@ -8,7 +8,7 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(Configuration)' != 'CI'">
     <Reference Include="Datex.Global">
       <HintPath>.\Externals\Datex.Global.dll</HintPath>
     </Reference>
@@ -17,4 +17,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Internals\Internals.csproj" />
   </ItemGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'CI'">
+    <DefineConstants>CI</DefineConstants>
+  </PropertyGroup>
 </Project>
