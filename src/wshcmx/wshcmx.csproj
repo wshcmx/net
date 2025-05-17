@@ -18,8 +18,4 @@
   <ItemGroup>
     <ProjectReference Include="..\Internals\Internals.csproj" />
   </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Reinforced.Typings" Version="1.6.5" />
-  </ItemGroup>
 </Project>
