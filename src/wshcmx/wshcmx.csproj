@@ -8,7 +8,7 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(Configuration)' != 'CI'">
+  <ItemGroup Condition="'$(Configuration)' != 'CI' and '$(Configuration)' != 'Release'">
     <Reference Include="Datex.Global">
       <HintPath>.\Externals\Datex.Global.dll</HintPath>
     </Reference>
