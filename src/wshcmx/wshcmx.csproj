@@ -14,7 +14,7 @@
     </Reference>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(Configuration)' == 'Release'">
+  <ItemGroup Condition="'$(Configuration)' == 'Release' or '$(CI)' == 'true'">
     <ProjectReference Include="..\PseudoDatex\PseudoDatex.csproj" />
   </ItemGroup>
 
