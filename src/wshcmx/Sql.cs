@@ -1,8 +1,4 @@
-# if CI
-using PseudoDatex;
-# else
 using Datex.Global.refs.xhttp;
-#endif
 
 using SqlInternal = Internals.Sql;
 

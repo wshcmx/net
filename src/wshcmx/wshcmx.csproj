@@ -14,11 +14,15 @@
     </Reference>
   </ItemGroup>
 
+  <ItemGroup Condition="'$(Configuration)' == 'Release'">
+    <ProjectReference Include="..\PseudoDatex\PseudoDatex.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Internals\Internals.csproj" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(IsCI)' == 'true'">
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <DefineConstants>CI</DefineConstants>
   </PropertyGroup>
 
