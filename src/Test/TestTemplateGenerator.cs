@@ -1,5 +1,4 @@
-﻿using System.Runtime.InteropServices;
-using Internals;
+﻿using Internals;
 
 namespace Test;
 
