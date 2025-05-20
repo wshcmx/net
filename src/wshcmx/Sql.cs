@@ -1,65 +1,102 @@
-using Datex.Global.refs.xhttp;
+using System.Data;
+using System.Text.Json;
 
-using SqlInternal = Internals.Sql;
+using Microsoft.Data.SqlClient;
 
 namespace wshcmx;
 
 public class Sql
 {
-    private SqlInternal? sqlInstance;
+    private string? _connectionString;
 
     public void Init(string connectionString)
     {
-        if (string.IsNullOrWhiteSpace(connectionString))
-            throw new ArgumentException("Connection string cannot be null or empty.", nameof(connectionString));
-
-        sqlInstance = new SqlInternal(connectionString);
+        _connectionString = connectionString;
     }
 
-    public void ExecuteNonQuery(string procedureName)
+    public KeyValuePair<string, object?>[][] ExecuteQuery(string commandText)
     {
-        ArgumentNullException.ThrowIfNull(sqlInstance, nameof(sqlInstance));
-        sqlInstance.ExecuteNonQuery(procedureName);
-    }
-
-    public JsObject ExecutePaginationProcedure(string procedureName, int page, int size, string serializedParameters)
-    {
-        ArgumentNullException.ThrowIfNull(sqlInstance, nameof(sqlInstance));
-        var (total, items) = sqlInstance.ExecutePaginationProcedure(procedureName, page, size, serializedParameters);
-        JsObject result = new();
-        result["total"] = total;
-        result["page"] = page;
-        result["size"] = size;
-        List<JsObject> convertedItems = new();
-
-        foreach (var item in items)
+        ArgumentNullException.ThrowIfNull(_connectionString, nameof(_connectionString));
+        using SqlConnection connection = new(_connectionString);
+        using SqlCommand command = new(commandText, connection);
+        connection.Open();
+        using SqlDataReader reader = command.ExecuteReader();
+        var rows = new List<List<KeyValuePair<string, object?>>>(capacity: 16);
+        while (reader.Read())
         {
-            JsObject jsItem = new();
-            foreach (var kvp in item)
-                jsItem[kvp.Key] = kvp.Value?.ToString() ?? string.Empty;
-            convertedItems.Add(jsItem);
+            var row = new List<KeyValuePair<string, object?>>(reader.FieldCount);
+            for (int i = 0; i < reader.FieldCount; i++)
+                row.Add(new KeyValuePair<string, object?>(reader.GetName(i), reader.IsDBNull(i) ? null : reader.GetValue(i)));
+            rows.Add(row);
+        }
+        return rows.Select(r => r.ToArray()).ToArray();
+    }
+
+    public object[] ExecutePaginationProcedure(string procedureName, int page, int size, string serializedParameters)
+    {
+        ArgumentNullException.ThrowIfNull(_connectionString, nameof(_connectionString));
+        ArgumentNullException.ThrowIfNull(serializedParameters, nameof(serializedParameters));
+        ArgumentNullException.ThrowIfNull(page, nameof(page));
+        ArgumentNullException.ThrowIfNull(size, nameof(size));
+
+        Dictionary<string, object>? parameters = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedParameters);
+
+        ArgumentNullException.ThrowIfNull(parameters, nameof(parameters));
+
+        using SqlConnection connection = new(_connectionString);
+        using SqlCommand command = new(procedureName, connection)
+        {
+            CommandType = CommandType.StoredProcedure
+        };
+
+        foreach (var param in parameters)
+            command.Parameters.AddWithValue(param.Key, param.Value.ToString());
+
+        connection.Open();
+        using var adapter = new SqlDataAdapter(command);
+        var ds = new DataSet();
+        adapter.Fill(ds);
+        var rows = new List<List<KeyValuePair<string, object?>>>(capacity: size);
+
+        foreach (DataRow row in ds.Tables[0].AsEnumerable().Skip(page * size).Take(size))
+        {
+            var rowList = new List<KeyValuePair<string, object?>>(ds.Tables[0].Columns.Count);
+            foreach (DataColumn column in ds.Tables[0].Columns)
+                rowList.Add(new KeyValuePair<string, object?>(column.ColumnName,
+                    row[column] == DBNull.Value ? null : row[column]));
+            rows.Add(rowList);
         }
 
-        result["items"] = convertedItems.ToArray();
-        return result;
+        _ = int.TryParse(ds.Tables[1].Rows[0][0].ToString(), out int total);
+        var items = rows.Select(r => r.ToArray()).ToArray();
+        return new object[] { total, items };
     }
 
-    public IEnumerable<JsObject> ExecuteProcedure(string procedureName, string serializedParameters)
+    public object[] ExecuteProcedure(string procedureName, string serializedParameters)
     {
-        ArgumentNullException.ThrowIfNull(sqlInstance, nameof(sqlInstance));
-        IEnumerable<Dictionary<string, object>> items = sqlInstance.ExecuteProcedure(procedureName, serializedParameters);
-        List<JsObject> convertedItems = new();
+        ArgumentNullException.ThrowIfNull(_connectionString, nameof(_connectionString));
 
-        foreach (var item in items)
+        using SqlConnection connection = new(_connectionString);
+        using SqlCommand command = new(procedureName, connection)
         {
-            JsObject jsItem = new();
+            CommandType = CommandType.StoredProcedure
+        };
 
-            foreach (var kvp in item)
-                jsItem[kvp.Key] = kvp.Value?.ToString() ?? string.Empty;
+        connection.Open();
+        using var adapter = new SqlDataAdapter(command);
+        var ds = new DataSet();
+        adapter.Fill(ds);
+        var rows = new List<List<KeyValuePair<string, object?>>>();
 
-            convertedItems.Add(jsItem);
+        foreach (DataRow row in ds.Tables[0].AsEnumerable())
+        {
+            var rowList = new List<KeyValuePair<string, object?>>(ds.Tables[0].Columns.Count);
+            foreach (DataColumn column in ds.Tables[0].Columns)
+                rowList.Add(new KeyValuePair<string, object?>(column.ColumnName,
+                    row[column] == DBNull.Value ? null : row[column]));
+            rows.Add(rowList);
         }
 
-        return convertedItems.ToArray();
+        return rows.Select(r => r.ToArray()).ToArray();
     }
 }

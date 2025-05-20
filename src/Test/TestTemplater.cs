@@ -1,20 +1,22 @@
-﻿using Internals;
+﻿using System.Text.Json;
+
+using wshcmx;
 
 namespace Test;
 
-public class TestTemplateGenerator
+public class TestTemplater
 {
     [Fact]
     public void SimpleTest()
     {
         const string content = "Hello {{name}}";
 
-        var data = new Dictionary<string, object>
+        Dictionary<string, object> data = new()
         {
             { "name", "World" }
         };
 
-        var res = Templater.Generate(content, data);
+        var res = Templater.Generate(content, JsonSerializer.Serialize(data));
         Assert.Equal("Hello World", res);
     }
 
@@ -34,7 +36,7 @@ public class TestTemplateGenerator
   <li>{{.}}</li>
   {{/list}}
 </ul>",
-data);
+JsonSerializer.Serialize(data));
         Assert.Equal(@"<ul>
   <li>John</li>
   <li>Doe</li>

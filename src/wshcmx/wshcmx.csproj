@@ -8,18 +8,9 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(Configuration)' != 'Release'">
-    <Reference Include="Datex.Global">
-      <HintPath>.\Externals\Datex.Global.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(Configuration)' == 'Release' or '$(CI)' == 'true'">
-    <ProjectReference Include="..\PseudoDatex\PseudoDatex.csproj" />
-  </ItemGroup>
-
   <ItemGroup>
-    <ProjectReference Include="..\Internals\Internals.csproj" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.3" />
+    <PackageReference Include="Mustache.NETStandard" Version="1.1.0" />
   </ItemGroup>
 
 </Project>
