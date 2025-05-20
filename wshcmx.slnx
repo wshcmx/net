@@ -5,11 +5,6 @@
     <Platform Name="x86" />
   </Configurations>
   <Folder Name="/src/">
-    <Project Path="src/Internals/Internals.csproj">
-      <BuildType Project="?" />
-      <Platform Project="?" />
-      <Build Project="false" />
-    </Project>
     <Project Path="src/Test/Test.csproj" />
     <Project Path="src/wshcmx/wshcmx.csproj" />
   </Folder>
