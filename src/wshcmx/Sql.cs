@@ -50,7 +50,7 @@ public class Sql
         };
 
         foreach (var param in parameters)
-            command.Parameters.AddWithValue(param.Key, param.Value.ToString());
+            command.Parameters.AddWithValue(param.Key, param.Value is null ? DBNull.Value : param.Value.ToString());
 
         connection.Open();
         using var adapter = new SqlDataAdapter(command);
@@ -75,12 +75,18 @@ public class Sql
     public object[] ExecuteProcedure(string procedureName, string serializedParameters)
     {
         ArgumentNullException.ThrowIfNull(_connectionString, nameof(_connectionString));
+        ArgumentNullException.ThrowIfNull(serializedParameters, nameof(serializedParameters));
+        Dictionary<string, object>? parameters = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedParameters);
+        ArgumentNullException.ThrowIfNull(parameters, nameof(parameters));
 
         using SqlConnection connection = new(_connectionString);
         using SqlCommand command = new(procedureName, connection)
         {
             CommandType = CommandType.StoredProcedure
         };
+
+        foreach (var param in parameters)
+            command.Parameters.AddWithValue(param.Key, param.Value is null ? DBNull.Value : param.Value.ToString());
 
         connection.Open();
         using var adapter = new SqlDataAdapter(command);
