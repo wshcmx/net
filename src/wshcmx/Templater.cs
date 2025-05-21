@@ -1,10 +1,12 @@
-﻿using Mustache;
+﻿using System.Text.Json;
 
-namespace Internals;
+using Mustache;
+
+namespace wshcmx;
 
 public static class Templater
 {
-    public static string Generate(string template, object? data)
+    public static string Generate(string template, object[] data)
     {
         if (File.Exists(template))
         {
