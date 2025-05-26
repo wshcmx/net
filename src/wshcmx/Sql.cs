@@ -17,18 +17,26 @@ public class Sql
     public KeyValuePair<string, object?>[][] ExecuteQuery(string commandText)
     {
         ArgumentNullException.ThrowIfNull(_connectionString, nameof(_connectionString));
+
         using SqlConnection connection = new(_connectionString);
         using SqlCommand command = new(commandText, connection);
         connection.Open();
+
         using SqlDataReader reader = command.ExecuteReader();
-        var rows = new List<List<KeyValuePair<string, object?>>>(capacity: 16);
+        List<List<KeyValuePair<string, object?>>> rows = new();
+
         while (reader.Read())
         {
-            var row = new List<KeyValuePair<string, object?>>(reader.FieldCount);
+            List<KeyValuePair<string, object?>> row = new(reader.FieldCount);
+
             for (int i = 0; i < reader.FieldCount; i++)
-                row.Add(new KeyValuePair<string, object?>(reader.GetName(i), reader.IsDBNull(i) ? null : reader.GetValue(i)));
+            {
+                row.Add(new(reader.GetName(i), reader.IsDBNull(i) ? null : reader.GetValue(i)));
+            }
+
             rows.Add(row);
         }
+
         return rows.Select(r => r.ToArray()).ToArray();
     }
 
@@ -59,26 +67,31 @@ public class Sql
         };
 
         foreach (var param in parameters)
+        {
             command.Parameters.AddWithValue(param.Key, param.Value is null ? DBNull.Value : param.Value.ToString());
+        }
 
         connection.Open();
-        using var adapter = new SqlDataAdapter(command);
-        var ds = new DataSet();
+        using SqlDataAdapter adapter = new(command);
+        DataSet ds = new();
         adapter.Fill(ds);
-        var rows = new List<List<KeyValuePair<string, object?>>>(capacity: size);
+        List<List<KeyValuePair<string, object?>>> rows = new(capacity: size);
 
         foreach (DataRow row in ds.Tables[0].AsEnumerable().Skip(page * size).Take(size))
         {
-            var rowList = new List<KeyValuePair<string, object?>>(ds.Tables[0].Columns.Count);
+            List<KeyValuePair<string, object?>> rowList = new(ds.Tables[0].Columns.Count);
+
             foreach (DataColumn column in ds.Tables[0].Columns)
+            {
                 rowList.Add(new KeyValuePair<string, object?>(column.ColumnName,
                     row[column] == DBNull.Value ? null : row[column]));
+            }
+
             rows.Add(rowList);
         }
 
         _ = int.TryParse(ds.Tables[1].Rows[0][0].ToString(), out int total);
-        var items = rows.Select(r => r.ToArray()).ToArray();
-        return new object[] { total, items };
+        return new object[] { total, rows.Select(r => r.ToArray()).ToArray() };
     }
 
     public object[] ExecuteProcedure(string procedureName, string serializedParameters)
@@ -95,20 +108,26 @@ public class Sql
         };
 
         foreach (var param in parameters)
+        {
             command.Parameters.AddWithValue(param.Key, param.Value is null ? DBNull.Value : param.Value.ToString());
+        }
 
         connection.Open();
-        using var adapter = new SqlDataAdapter(command);
-        var ds = new DataSet();
+        using SqlDataAdapter adapter = new(command);
+        DataSet ds = new();
         adapter.Fill(ds);
-        var rows = new List<List<KeyValuePair<string, object?>>>();
+        List<List<KeyValuePair<string, object?>>> rows = new();
 
         foreach (DataRow row in ds.Tables[0].AsEnumerable())
         {
-            var rowList = new List<KeyValuePair<string, object?>>(ds.Tables[0].Columns.Count);
+            List<KeyValuePair<string, object?>> rowList = new(ds.Tables[0].Columns.Count);
+
             foreach (DataColumn column in ds.Tables[0].Columns)
+            {
                 rowList.Add(new KeyValuePair<string, object?>(column.ColumnName,
                     row[column] == DBNull.Value ? null : row[column]));
+            }
+
             rows.Add(rowList);
         }
 
