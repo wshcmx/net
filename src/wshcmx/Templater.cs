@@ -1,10 +1,10 @@
 ﻿using Mustache;
 
-namespace Internals;
+namespace wshcmx;
 
 public static class Templater
 {
-    public static string Generate(string template, object? data)
+    public static string Generate(string template, object[] data)
     {
         if (File.Exists(template))
         {

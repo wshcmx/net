@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <Version>1.1.0</Version>
     <TargetFramework>net6.0</TargetFramework>
-    <RuntimeIdentifiers>linux-x64</RuntimeIdentifiers>
     <RootNamespace>wshcmx</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -10,12 +10,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="Datex.Global">
-      <HintPath>.\Externals\Datex.Global.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.3" />
+    <PackageReference Include="Mustache.NETStandard" Version="1.1.0" />
+    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.6.4" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Internals\Internals.csproj" />
-  </ItemGroup>
 </Project>
