@@ -32,6 +32,15 @@ public class Sql
         return rows.Select(r => r.ToArray()).ToArray();
     }
 
+    public void ExecuteNonQuery(string commandText)
+    {
+        ArgumentNullException.ThrowIfNull(_connectionString, nameof(_connectionString));
+        using SqlConnection connection = new(_connectionString);
+        using SqlCommand command = new(commandText, connection);
+        connection.Open();
+        command.ExecuteNonQuery();
+    }
+
     public object[] ExecutePaginationProcedure(string procedureName, int page, int size, string serializedParameters)
     {
         ArgumentNullException.ThrowIfNull(_connectionString, nameof(_connectionString));
