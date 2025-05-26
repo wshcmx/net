@@ -12,6 +12,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.3" />
     <PackageReference Include="Mustache.NETStandard" Version="1.1.0" />
+    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.6.4" />
   </ItemGroup>
 
 </Project>
