@@ -74,17 +74,16 @@ public class Sql
         connection.Open();
         using SqlDataAdapter adapter = new(command);
         DataSet ds = new();
-        adapter.Fill(ds);
+        adapter.Fill(ds, page * size, size, ds.Tables[0].TableName);
         List<List<KeyValuePair<string, object?>>> rows = new(capacity: size);
 
-        foreach (DataRow row in ds.Tables[0].AsEnumerable().Skip(page * size).Take(size))
+        foreach (DataRow row in ds.Tables[0].Rows)
         {
             List<KeyValuePair<string, object?>> rowList = new(ds.Tables[0].Columns.Count);
 
             foreach (DataColumn column in ds.Tables[0].Columns)
             {
-                rowList.Add(new KeyValuePair<string, object?>(column.ColumnName,
-                    row[column] == DBNull.Value ? null : row[column]));
+                rowList.Add(new(column.ColumnName, row[column] == DBNull.Value ? null : row[column]));
             }
 
             rows.Add(rowList);
@@ -94,12 +93,9 @@ public class Sql
         return new object[] { total, rows.Select(r => r.ToArray()).ToArray() };
     }
 
-    public object[] ExecuteProcedure(string procedureName, string serializedParameters)
+    public object[] ExecuteProcedure(string procedureName, string? serializedParameters)
     {
         ArgumentNullException.ThrowIfNull(_connectionString, nameof(_connectionString));
-        ArgumentNullException.ThrowIfNull(serializedParameters, nameof(serializedParameters));
-        Dictionary<string, object>? parameters = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedParameters);
-        ArgumentNullException.ThrowIfNull(parameters, nameof(parameters));
 
         using SqlConnection connection = new(_connectionString);
         using SqlCommand command = new(procedureName, connection)
@@ -107,9 +103,17 @@ public class Sql
             CommandType = CommandType.StoredProcedure
         };
 
-        foreach (var param in parameters)
+        if (serializedParameters is not null)
         {
-            command.Parameters.AddWithValue(param.Key, param.Value is null ? DBNull.Value : param.Value.ToString());
+            Dictionary<string, object>? parameters = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedParameters);
+
+            if (parameters is not null)
+            {
+                foreach (var param in parameters)
+                {
+                    command.Parameters.AddWithValue(param.Key, param.Value is null ? DBNull.Value : param.Value.ToString());
+                }
+            }
         }
 
         connection.Open();
@@ -118,14 +122,13 @@ public class Sql
         adapter.Fill(ds);
         List<List<KeyValuePair<string, object?>>> rows = new();
 
-        foreach (DataRow row in ds.Tables[0].AsEnumerable())
+        foreach (DataRow row in ds.Tables[0].Rows)
         {
             List<KeyValuePair<string, object?>> rowList = new(ds.Tables[0].Columns.Count);
 
             foreach (DataColumn column in ds.Tables[0].Columns)
             {
-                rowList.Add(new KeyValuePair<string, object?>(column.ColumnName,
-                    row[column] == DBNull.Value ? null : row[column]));
+                rowList.Add(new(column.ColumnName, row[column] == DBNull.Value ? null : row[column]));
             }
 
             rows.Add(rowList);
