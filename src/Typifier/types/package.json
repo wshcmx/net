@@ -1,0 +1,16 @@
+{
+  "name": "@wshcmx/net",
+  "version": "1.0.0",
+  "description": "Generated types for wshcmx/net package",
+  "keywords": [
+    "types",
+    "websoft",
+    "webtutor",
+    "webtutor-types",
+    "wxhcmx",
+    "wxhcmx-types",
+    "wt"
+  ],
+  "author": "wshcmx",
+  "license": "MIT"
+}

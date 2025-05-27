@@ -1,0 +1,1 @@
+﻿Typifier.Generator.Generate();
