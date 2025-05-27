@@ -7,5 +7,6 @@
   <Folder Name="/src/">
     <Project Path="src/Test/Test.csproj" />
     <Project Path="src/wshcmx/wshcmx.csproj" />
+    <Project Path="src/Typifier/Typifier.csproj" />
   </Folder>
 </Solution>
