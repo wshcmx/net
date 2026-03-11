@@ -12,7 +12,11 @@ public class PostgreSqlProvider : IDatabaseProvider
 
     public DbCommand CreateCommand(string commandText, DbConnection connection)
     {
-        return new NpgsqlCommand(commandText, (NpgsqlConnection)connection);
+        if (connection is not NpgsqlConnection npgsqlConnection)
+        {
+            throw new ArgumentException("Connection must be of type NpgsqlConnection.", nameof(connection));
+        }
+        return new NpgsqlCommand(commandText, npgsqlConnection);
     }
 
     public DbParameter CreateParameter(string name, object? value)

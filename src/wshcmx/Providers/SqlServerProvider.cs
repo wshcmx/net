@@ -12,7 +12,11 @@ public class SqlServerProvider : IDatabaseProvider
 
     public DbCommand CreateCommand(string commandText, DbConnection connection)
     {
-        return new SqlCommand(commandText, (SqlConnection)connection);
+        if (connection is not SqlConnection sqlConnection)
+        {
+            throw new ArgumentException("Connection must be of type SqlConnection.", nameof(connection));
+        }
+        return new SqlCommand(commandText, sqlConnection);
     }
 
     public DbParameter CreateParameter(string name, object? value)
