@@ -1,1 +1,1 @@
-﻿Typifier.Generator.Generate();
+Typifier.Generator.Generate();
