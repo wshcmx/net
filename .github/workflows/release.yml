@@ -7,50 +7,34 @@ on:
 
 jobs:
   build:
-    name: Build and Test
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        runtime: [ linux-x64 ]
-
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: 9.0.x
-      - name: Restore dependencies
-        run: dotnet restore
-      - name: Build for ${{ matrix.runtime }}
-        run: dotnet build src/wshcmx -c Release --no-restore
-      # - name: Run Tests
-      #   run: dotnet test -c Release --no-build --verbosity normal
-      - name: Publish Application
-        run: dotnet publish src/wshcmx -r ${{ matrix.runtime }} -c Release -o ./publish/${{ matrix.runtime }}
-      - name: Create ZIP Archives
-        run: |
-          cd ./publish/${{ matrix.runtime }}
-          zip -r ../../wshcmx-${{ matrix.runtime }}.zip ./*
-          cd ../..
-      - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v4
+          dotnet-version: 10.0.x
+      - name: Publish
+        run: dotnet publish src/wshcmx -r linux-x64 -c Release -o ./publish
+      - name: Create ZIP
+        run: cd ./publish && zip -r ../wshcmx-linux-x64.zip ./*
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v6
         with:
-          name: wshcmx-${{ matrix.runtime }}.zip
-          path: wshcmx-${{ matrix.runtime }}.zip
+          name: wshcmx-linux-x64
+          path: wshcmx-linux-x64.zip
+
   release:
-    name: Create GitHub Release
     needs: build
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download Build Artifacts
-        uses: actions/download-artifact@v4
+      - name: Download Artifact
+        uses: actions/download-artifact@v7
         with:
           merge-multiple: true
           path: ./release
-      - name: List downloaded artifacts
-        run: ls -R ./release
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -58,5 +42,3 @@ jobs:
           name: Release ${{ github.ref_name }}
           body: "Automated release for ${{ github.ref_name }}."
           files: release/wshcmx-linux-x64.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
