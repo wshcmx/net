@@ -18,5 +18,3 @@ jobs:
       run: dotnet restore
     - name: Build
       run: dotnet build src/wshcmx --no-restore
-    # - name: Test
-    #   run: dotnet test src/Test --verbosity normal
