@@ -1,4 +1,4 @@
-﻿using Mustache;
+using Mustache;
 
 namespace wshcmx;
 
