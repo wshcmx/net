@@ -2,28 +2,29 @@ using System.Data;
 using System.Text.Json;
 using System.Linq.Dynamic.Core;
 
-using Microsoft.Data.SqlClient;
-
 namespace wshcmx;
 
 public class Sql
 {
     private string? _connectionString;
+    private IDatabaseProvider? _provider;
 
-    public void Init(string connectionString)
+    public void Init(string connectionString, DatabaseType databaseType = DatabaseType.SqlServer)
     {
         _connectionString = connectionString;
+        _provider = DatabaseProviderFactory.CreateProvider(databaseType);
     }
 
     public KeyValuePair<string, object?>[][] ExecuteQuery(string commandText)
     {
         ArgumentNullException.ThrowIfNull(_connectionString, nameof(_connectionString));
+        ArgumentNullException.ThrowIfNull(_provider, nameof(_provider));
 
-        using SqlConnection connection = new(_connectionString);
-        using SqlCommand command = new(commandText, connection);
+        using var connection = _provider.CreateConnection(_connectionString);
+        using var command = _provider.CreateCommand(commandText, connection);
         connection.Open();
 
-        using SqlDataReader reader = command.ExecuteReader();
+        using var reader = command.ExecuteReader();
         List<List<KeyValuePair<string, object?>>> rows = new();
 
         while (reader.Read())
@@ -44,8 +45,10 @@ public class Sql
     public void ExecuteNonQuery(string commandText)
     {
         ArgumentNullException.ThrowIfNull(_connectionString, nameof(_connectionString));
-        using SqlConnection connection = new(_connectionString);
-        using SqlCommand command = new(commandText, connection);
+        ArgumentNullException.ThrowIfNull(_provider, nameof(_provider));
+
+        using var connection = _provider.CreateConnection(_connectionString);
+        using var command = _provider.CreateCommand(commandText, connection);
         connection.Open();
         command.ExecuteNonQuery();
     }
@@ -54,6 +57,7 @@ public class Sql
     {
         ArgumentNullException.ThrowIfNull(_connectionString, nameof(_connectionString));
         ArgumentNullException.ThrowIfNull(serializedParameters, nameof(serializedParameters));
+        ArgumentNullException.ThrowIfNull(_provider, nameof(_provider));
 
         Dictionary<string, object>? options = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedOptions);
         _ = int.TryParse(options?.GetValueOrDefault("page")?.ToString(), out int page);
@@ -75,22 +79,22 @@ public class Sql
 
         Dictionary<string, object>? parameters = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedParameters);
 
-        using SqlConnection connection = new(_connectionString);
-        using SqlCommand command = new(procedureName, connection)
-        {
-            CommandType = CommandType.StoredProcedure
-        };
+        using var connection = _provider.CreateConnection(_connectionString);
+        using var command = _provider.CreateCommand(procedureName, connection);
+        command.CommandType = CommandType.StoredProcedure;
 
         if (parameters is not null)
         {
             foreach (var param in parameters)
             {
-                command.Parameters.AddWithValue(param.Key, param.Value is null ? DBNull.Value : param.Value.ToString());
+                var dbParam = _provider.CreateParameter(param.Key,
+                    param.Value is null ? DBNull.Value : param.Value.ToString());
+                command.Parameters.Add(dbParam);
             }
         }
 
         connection.Open();
-        using SqlDataAdapter adapter = new(command);
+        using var adapter = _provider.CreateDataAdapter(command);
         DataSet ds = new();
         adapter.Fill(ds);
         var intermediateResult = ds.Tables[0].AsEnumerable().AsQueryable();
@@ -140,12 +144,11 @@ public class Sql
     public object[] ExecuteProcedure(string procedureName, string? serializedParameters)
     {
         ArgumentNullException.ThrowIfNull(_connectionString, nameof(_connectionString));
+        ArgumentNullException.ThrowIfNull(_provider, nameof(_provider));
 
-        using SqlConnection connection = new(_connectionString);
-        using SqlCommand command = new(procedureName, connection)
-        {
-            CommandType = CommandType.StoredProcedure
-        };
+        using var connection = _provider.CreateConnection(_connectionString);
+        using var command = _provider.CreateCommand(procedureName, connection);
+        command.CommandType = CommandType.StoredProcedure;
 
         if (serializedParameters is not null)
         {
@@ -155,13 +158,13 @@ public class Sql
             {
                 foreach (var param in parameters)
                 {
-                    command.Parameters.AddWithValue(param.Key, param.Value is null ? DBNull.Value : param.Value.ToString());
+                    command.Parameters.Add(_provider.CreateParameter(param.Key, param.Value is null ? DBNull.Value : param.Value.ToString()));
                 }
             }
         }
 
         connection.Open();
-        using SqlDataAdapter adapter = new(command);
+        using var adapter = _provider.CreateDataAdapter(command);
         DataSet ds = new();
         adapter.Fill(ds);
         List<List<KeyValuePair<string, object?>>> rows = new();
