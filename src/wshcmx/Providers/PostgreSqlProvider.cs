@@ -28,9 +28,4 @@ public class PostgreSqlProvider : IDatabaseProvider
     {
         return new NpgsqlDataAdapter((NpgsqlCommand)command);
     }
-
-    public string GetParameterPrefix()
-    {
-        return "@";
-    }
 }

@@ -28,9 +28,4 @@ public class SqlServerProvider : IDatabaseProvider
     {
         return new SqlDataAdapter((SqlCommand)command);
     }
-
-    public string GetParameterPrefix()
-    {
-        return "@";
-    }
 }

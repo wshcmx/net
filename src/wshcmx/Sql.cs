@@ -153,9 +153,7 @@ public class Sql
             {
                 foreach (var param in parameters)
                 {
-                    var dbParam = _provider.CreateParameter(_provider.GetParameterPrefix() + param.Key,
-                        param.Value is null ? DBNull.Value : param.Value.ToString());
-                    command.Parameters.Add(dbParam);
+                    command.Parameters.Add(_provider.CreateParameter(param.Key, param.Value is null ? DBNull.Value : param.Value.ToString()));
                 }
             }
         }
