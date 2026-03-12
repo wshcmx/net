@@ -7,7 +7,7 @@ namespace wshcmx;
 public class Sql
 {
     private string? _connectionString;
-    private IDatabaseProvider _provider = DatabaseProviderFactory.CreateProvider(DatabaseType.SqlServer); // Default to SQL Server
+    private IDatabaseProvider? _provider;
 
     public void Init(string connectionString, DatabaseType databaseType = DatabaseType.SqlServer)
     {
@@ -18,6 +18,7 @@ public class Sql
     public KeyValuePair<string, object?>[][] ExecuteQuery(string commandText)
     {
         ArgumentNullException.ThrowIfNull(_connectionString, nameof(_connectionString));
+        ArgumentNullException.ThrowIfNull(_provider, nameof(_provider));
 
         using var connection = _provider.CreateConnection(_connectionString);
         using var command = _provider.CreateCommand(commandText, connection);
@@ -44,6 +45,8 @@ public class Sql
     public void ExecuteNonQuery(string commandText)
     {
         ArgumentNullException.ThrowIfNull(_connectionString, nameof(_connectionString));
+        ArgumentNullException.ThrowIfNull(_provider, nameof(_provider));
+
         using var connection = _provider.CreateConnection(_connectionString);
         using var command = _provider.CreateCommand(commandText, connection);
         connection.Open();
@@ -54,6 +57,7 @@ public class Sql
     {
         ArgumentNullException.ThrowIfNull(_connectionString, nameof(_connectionString));
         ArgumentNullException.ThrowIfNull(serializedParameters, nameof(serializedParameters));
+        ArgumentNullException.ThrowIfNull(_provider, nameof(_provider));
 
         Dictionary<string, object>? options = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedOptions);
         _ = int.TryParse(options?.GetValueOrDefault("page")?.ToString(), out int page);
@@ -83,7 +87,7 @@ public class Sql
         {
             foreach (var param in parameters)
             {
-                var dbParam = _provider.CreateParameter(_provider.GetParameterPrefix() + param.Key,
+                var dbParam = _provider.CreateParameter(param.Key,
                     param.Value is null ? DBNull.Value : param.Value.ToString());
                 command.Parameters.Add(dbParam);
             }
@@ -140,6 +144,7 @@ public class Sql
     public object[] ExecuteProcedure(string procedureName, string? serializedParameters)
     {
         ArgumentNullException.ThrowIfNull(_connectionString, nameof(_connectionString));
+        ArgumentNullException.ThrowIfNull(_provider, nameof(_provider));
 
         using var connection = _provider.CreateConnection(_connectionString);
         using var command = _provider.CreateCommand(procedureName, connection);
