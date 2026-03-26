@@ -2,7 +2,7 @@ using wshcmx.Providers;
 
 namespace wshcmx;
 
-public static class DatabaseProviderFactory
+internal static class DatabaseProviderFactory
 {
     public static IDatabaseProvider CreateProvider(DatabaseType databaseType)
     {
