@@ -3,7 +3,7 @@ using Npgsql;
 
 namespace wshcmx.Providers;
 
-public class PostgreSqlProvider : IDatabaseProvider
+internal class PostgreSqlProvider : IDatabaseProvider
 {
     public DbConnection CreateConnection(string connectionString)
     {

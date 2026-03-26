@@ -3,7 +3,7 @@ using Microsoft.Data.SqlClient;
 
 namespace wshcmx.Providers;
 
-public class SqlServerProvider : IDatabaseProvider
+internal class SqlServerProvider : IDatabaseProvider
 {
     public DbConnection CreateConnection(string connectionString)
     {
