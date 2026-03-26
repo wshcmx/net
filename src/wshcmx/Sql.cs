@@ -15,6 +15,11 @@ public class Sql
         _provider = DatabaseProviderFactory.CreateProvider(databaseType);
     }
 
+    public void Init(string connectionString, int databaseTypeNumber)
+    {
+        Init(connectionString, (DatabaseType)databaseTypeNumber);
+    }
+
     public KeyValuePair<string, object?>[][] ExecuteQuery(string commandText)
     {
         GuardHelper.ThrowIfNull(_connectionString, nameof(_connectionString));
