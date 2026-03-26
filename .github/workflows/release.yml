@@ -14,7 +14,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: 9.0.x
+          dotnet-version: 10.x
       - name: Publish
         run: dotnet publish src/wshcmx -f netstandard2.0 -r linux-x64 -c Release -o ./publish
       - name: Create ZIP
