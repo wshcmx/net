@@ -2,17 +2,22 @@ using System.Data;
 using System.Text.Json;
 using System.Linq.Dynamic.Core;
 
-using Microsoft.Data.SqlClient;
-
 namespace wshcmx;
 
 public class Sql
 {
     private string? _connectionString;
+    private IDatabaseProvider? _provider;
 
-    public void Init(string connectionString)
+    public void Init(string connectionString, DatabaseType databaseType = DatabaseType.SqlServer)
     {
         _connectionString = connectionString;
+        _provider = DatabaseProviderFactory.CreateProvider(databaseType);
+    }
+
+    public void Init(string connectionString, int databaseTypeNumber)
+    {
+        Init(connectionString, (DatabaseType)databaseTypeNumber);
     }
 
     public KeyValuePair<string, object?>[][] ExecuteQuery(string commandText)
@@ -24,7 +29,7 @@ public class Sql
         using var command = provider.CreateCommand(commandText, connection);
         connection.Open();
 
-        using SqlDataReader reader = command.ExecuteReader();
+        using var reader = command.ExecuteReader();
         List<List<KeyValuePair<string, object?>>> rows = new();
 
         while (reader.Read())
@@ -59,6 +64,7 @@ public class Sql
         var connectionString = GuardHelper.GetRequired(_connectionString, nameof(_connectionString));
 
         GuardHelper.ThrowIfNull(serializedParameters, nameof(serializedParameters));
+        GuardHelper.ThrowIfNull(_provider, nameof(_provider));
 
         Dictionary<string, object>? options = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedOptions);
         _ = int.TryParse(GuardHelper.GetDictionaryValue(options, "page")?.ToString(), out int page);
