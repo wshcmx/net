@@ -14,6 +14,12 @@ internal static class GuardHelper
         return null;
     }
 
+    public static T GetRequired<T>(T? value, string paramName) where T : class
+    {
+        ThrowIfNull(value, paramName);
+        return value!;
+    }
+
     public static void ThrowIfNull(object? value, string paramName)
     {
 #if NET6_0_OR_GREATER
