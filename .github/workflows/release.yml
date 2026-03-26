@@ -1,9 +1,9 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'v*'
+  release:
+    types:
+      - created
 
 jobs:
   build:
@@ -16,7 +16,7 @@ jobs:
         with:
           dotnet-version: 10.0.x
       - name: Publish
-        run: dotnet publish src/wshcmx -r linux-x64 -c Release -o ./publish
+        run: dotnet publish src/wshcmx -f netstandard2.0 -r linux-x64 -c Release -o ./publish
       - name: Create ZIP
         run: cd ./publish && zip -r ../wshcmx-linux-x64.zip ./*
       - name: Upload Artifact
@@ -38,7 +38,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
-          body: "Automated release for ${{ github.ref_name }}."
+          tag_name: ${{ github.event.release.tag_name }}
+          name: Release ${{ github.event.release.tag_name }}
+          body: "Automated release for ${{ github.event.release.tag_name }}."
           files: release/wshcmx-linux-x64.zip
