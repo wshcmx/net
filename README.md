@@ -68,5 +68,5 @@ dotnet build
 
 ```bash
 dotnet build src/wshcmx
-dotnet run --project src/Typifier -- --assembly src/wshcmx/bin/Debug/net6.0/wshcmx.dll --output types/wshcmx.d.ts
+dotnet run --project src/Typifier -- --assembly src/wshcmx/bin/Debug/net10.0/wshcmx.dll --output types/wshcmx.d.ts
 ```
