@@ -1,6 +1,6 @@
 # wshcmx/net
 
-[![Build](https://github.com/wshcmx/net/actions/workflows/build.yml/badge.svg)](https://github.com/wshcmx/net/actions/workflows/build.yml)
+[![Build](https://github.com/wshcmx/net/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/wshcmx/net/actions/workflows/build.yml)
 
 Подключаемая .NET библиотека для работы в окружении WebSoft HCM. Предоставляет функции для выполнения SQL-запросов и рендеринга шаблонов, доступные из скриптового языка платформы.
 
