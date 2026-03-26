@@ -10,7 +10,11 @@ public static class Generator
         string namespaceName = "wshcmx";
         IEnumerable<System.Type> types = Assembly.Load(namespaceName)
             .GetTypes()
-            .Where(x => !x.Name.EndsWith("Attribute") && x.IsClass && !x.Name.StartsWith("<"));
+            .Where(x =>
+                !x.Name.EndsWith("Attribute") &&
+                x.IsClass &&
+                (x.IsPublic || x.IsNestedPublic) &&
+                !x.Name.StartsWith("<"));
 
         StringBuilder sb = new();
         sb.AppendLine("// -------------------------------------------------------");
@@ -23,7 +27,7 @@ public static class Generator
         sb.AppendLine($"  namespace Net {{");
         sb.AppendLine($"    type KeyValuePair<K, V> = {{ Key: K; Value: V }};");
 
-        foreach (System.Type type in types)
+        foreach (Type type in types)
         {
             sb.AppendLine($"\n    export abstract class {type.Name} {{");
 
@@ -45,14 +49,14 @@ public static class Generator
         sb.AppendLine("  }");
         sb.AppendLine("}");
 
-        string buildPath = "./Externals";
+        string buildPath = "src/Typifier/types/index.d.ts";
 
-        if (!Directory.Exists(buildPath))
+        if (!Directory.Exists(Path.GetDirectoryName(buildPath)))
         {
-            Directory.CreateDirectory(buildPath);
+            Directory.CreateDirectory(Path.GetDirectoryName(buildPath)!);
         }
 
-        File.WriteAllText(Path.Combine(buildPath, $"{namespaceName}.d.ts"), sb.ToString());
+        File.WriteAllText(buildPath, sb.ToString());
     }
 
     private static string MapType(Type type)
@@ -61,18 +65,34 @@ public static class Generator
         if (type == typeof(string)) return "string";
         if (type == typeof(bool)) return "boolean";
         if (type == typeof(int)) return "number";
+        if (type.IsEnum)
+        {
+            string[] enumValues = Enum.GetValues(type)
+                .Cast<object>()
+                .Select(value => EnumValueToNumberLiteral(type, value))
+                .Distinct()
+                .ToArray();
+
+            return enumValues.Length == 0 ? "number" : string.Join(" | ", enumValues);
+        }
         if (type == typeof(object)) return "unknown";
 
-        if (Nullable.GetUnderlyingType(type) != null)
+        Type? possibleType = Nullable.GetUnderlyingType(type);
+
+        if (possibleType != null)
         {
-            return MapType(Nullable.GetUnderlyingType(type)) + " | null";
+            return MapType(possibleType) + " | null";
         }
 
         // Handle jagged arays
         if (type.IsArray)
         {
             var elementType = type.GetElementType();
-            return MapType(elementType) + "[]";
+
+            if (elementType != null)
+            {
+                return MapType(elementType) + "[]";
+            }
         }
 
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
@@ -86,5 +106,17 @@ public static class Generator
         }
 
         return type.ToString();
+    }
+
+    private static string EnumValueToNumberLiteral(Type enumType, object enumValue)
+    {
+        Type underlyingType = Enum.GetUnderlyingType(enumType);
+
+        if (underlyingType == typeof(byte) || underlyingType == typeof(ushort) || underlyingType == typeof(uint) || underlyingType == typeof(ulong))
+        {
+            return Convert.ToUInt64(enumValue).ToString();
+        }
+
+        return Convert.ToInt64(enumValue).ToString();
     }
 }
