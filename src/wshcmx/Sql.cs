@@ -17,7 +17,7 @@ public class Sql
 
     public KeyValuePair<string, object?>[][] ExecuteQuery(string commandText)
     {
-        ArgumentNullException.ThrowIfNull(_connectionString, nameof(_connectionString));
+        GuardHelper.ThrowIfNull(_connectionString, nameof(_connectionString));
 
         using SqlConnection connection = new(_connectionString);
         using SqlCommand command = new(commandText, connection);
@@ -43,7 +43,7 @@ public class Sql
 
     public void ExecuteNonQuery(string commandText)
     {
-        ArgumentNullException.ThrowIfNull(_connectionString, nameof(_connectionString));
+        GuardHelper.ThrowIfNull(_connectionString, nameof(_connectionString));
         using SqlConnection connection = new(_connectionString);
         using SqlCommand command = new(commandText, connection);
         connection.Open();
@@ -52,26 +52,26 @@ public class Sql
 
     public object[] ExecutePaginationProcedure(string procedureName, string serializedOptions, string serializedParameters)
     {
-        ArgumentNullException.ThrowIfNull(_connectionString, nameof(_connectionString));
-        ArgumentNullException.ThrowIfNull(serializedParameters, nameof(serializedParameters));
+        GuardHelper.ThrowIfNull(_connectionString, nameof(_connectionString));
+        GuardHelper.ThrowIfNull(serializedParameters, nameof(serializedParameters));
 
         Dictionary<string, object>? options = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedOptions);
-        _ = int.TryParse(options?.GetValueOrDefault("page")?.ToString(), out int page);
+        _ = int.TryParse(GuardHelper.GetDictionaryValue(options, "page")?.ToString(), out int page);
 
         if (page < 1)
         {
             page = 1;
         }
 
-        _ = int.TryParse(options?.GetValueOrDefault("size")?.ToString(), out int size);
+        _ = int.TryParse(GuardHelper.GetDictionaryValue(options, "size")?.ToString(), out int size);
 
         if (size < 1 || size > 400)
         {
             size = 400;
         }
 
-        string select = options?.GetValueOrDefault("select")?.ToString() ?? string.Empty;
-        string orderby = options?.GetValueOrDefault("orderby")?.ToString() ?? string.Empty;
+        string select = GuardHelper.GetDictionaryValue(options, "select")?.ToString() ?? string.Empty;
+        string orderby = GuardHelper.GetDictionaryValue(options, "orderby")?.ToString() ?? string.Empty;
 
         Dictionary<string, object>? parameters = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedParameters);
 
@@ -93,7 +93,7 @@ public class Sql
         using SqlDataAdapter adapter = new(command);
         DataSet ds = new();
         adapter.Fill(ds);
-        var intermediateResult = ds.Tables[0].AsEnumerable().AsQueryable();
+        var intermediateResult = ds.Tables[0].Rows.Cast<DataRow>().AsQueryable();
 
         if (!string.IsNullOrEmpty(orderby))
         {
@@ -139,7 +139,7 @@ public class Sql
 
     public object[] ExecuteProcedure(string procedureName, string? serializedParameters)
     {
-        ArgumentNullException.ThrowIfNull(_connectionString, nameof(_connectionString));
+        GuardHelper.ThrowIfNull(_connectionString, nameof(_connectionString));
 
         using SqlConnection connection = new(_connectionString);
         using SqlCommand command = new(procedureName, connection)
