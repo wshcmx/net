@@ -17,10 +17,11 @@ public class Sql
 
     public KeyValuePair<string, object?>[][] ExecuteQuery(string commandText)
     {
-        GuardHelper.ThrowIfNull(_connectionString, nameof(_connectionString));
+        var provider = GuardHelper.GetRequired(_provider, nameof(_provider));
+        var connectionString = GuardHelper.GetRequired(_connectionString, nameof(_connectionString));
 
-        using SqlConnection connection = new(_connectionString);
-        using SqlCommand command = new(commandText, connection);
+        using var connection = provider.CreateConnection(connectionString);
+        using var command = provider.CreateCommand(commandText, connection);
         connection.Open();
 
         using SqlDataReader reader = command.ExecuteReader();
@@ -43,16 +44,20 @@ public class Sql
 
     public void ExecuteNonQuery(string commandText)
     {
-        GuardHelper.ThrowIfNull(_connectionString, nameof(_connectionString));
-        using SqlConnection connection = new(_connectionString);
-        using SqlCommand command = new(commandText, connection);
+        var provider = GuardHelper.GetRequired(_provider, nameof(_provider));
+        var connectionString = GuardHelper.GetRequired(_connectionString, nameof(_connectionString));
+
+        using var connection = provider.CreateConnection(connectionString);
+        using var command = provider.CreateCommand(commandText, connection);
         connection.Open();
         command.ExecuteNonQuery();
     }
 
     public object[] ExecutePaginationProcedure(string procedureName, string serializedOptions, string serializedParameters)
     {
-        GuardHelper.ThrowIfNull(_connectionString, nameof(_connectionString));
+        var provider = GuardHelper.GetRequired(_provider, nameof(_provider));
+        var connectionString = GuardHelper.GetRequired(_connectionString, nameof(_connectionString));
+
         GuardHelper.ThrowIfNull(serializedParameters, nameof(serializedParameters));
 
         Dictionary<string, object>? options = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedOptions);
@@ -75,22 +80,22 @@ public class Sql
 
         Dictionary<string, object>? parameters = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedParameters);
 
-        using SqlConnection connection = new(_connectionString);
-        using SqlCommand command = new(procedureName, connection)
-        {
-            CommandType = CommandType.StoredProcedure
-        };
+        using var connection = provider.CreateConnection(connectionString);
+        using var command = provider.CreateCommand(procedureName, connection);
+        command.CommandType = CommandType.StoredProcedure;
 
         if (parameters is not null)
         {
             foreach (var param in parameters)
             {
-                command.Parameters.AddWithValue(param.Key, param.Value is null ? DBNull.Value : param.Value.ToString());
+                var dbParam = provider.CreateParameter(param.Key,
+                    param.Value is null ? DBNull.Value : param.Value.ToString());
+                command.Parameters.Add(dbParam);
             }
         }
 
         connection.Open();
-        using SqlDataAdapter adapter = new(command);
+        using var adapter = provider.CreateDataAdapter(command);
         DataSet ds = new();
         adapter.Fill(ds);
         var intermediateResult = ds.Tables[0].Rows.Cast<DataRow>().AsQueryable();
@@ -139,13 +144,12 @@ public class Sql
 
     public object[] ExecuteProcedure(string procedureName, string? serializedParameters)
     {
-        GuardHelper.ThrowIfNull(_connectionString, nameof(_connectionString));
+        var provider = GuardHelper.GetRequired(_provider, nameof(_provider));
+        var connectionString = GuardHelper.GetRequired(_connectionString, nameof(_connectionString));
 
-        using SqlConnection connection = new(_connectionString);
-        using SqlCommand command = new(procedureName, connection)
-        {
-            CommandType = CommandType.StoredProcedure
-        };
+        using var connection = provider.CreateConnection(connectionString);
+        using var command = provider.CreateCommand(procedureName, connection);
+        command.CommandType = CommandType.StoredProcedure;
 
         if (serializedParameters is not null)
         {
@@ -155,13 +159,13 @@ public class Sql
             {
                 foreach (var param in parameters)
                 {
-                    command.Parameters.AddWithValue(param.Key, param.Value is null ? DBNull.Value : param.Value.ToString());
+                    command.Parameters.Add(provider.CreateParameter(param.Key, param.Value is null ? DBNull.Value : param.Value.ToString()));
                 }
             }
         }
 
         connection.Open();
-        using SqlDataAdapter adapter = new(command);
+        using var adapter = provider.CreateDataAdapter(command);
         DataSet ds = new();
         adapter.Fill(ds);
         List<List<KeyValuePair<string, object?>>> rows = new();
