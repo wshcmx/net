@@ -174,6 +174,73 @@ public class Sql
         using var adapter = provider.CreateDataAdapter(command);
         DataSet ds = new();
         adapter.Fill(ds);
+
+        if (ds.Tables.Count == 0)
+            return Array.Empty<KeyValuePair<string, object?>[]>();
+
+        List<List<KeyValuePair<string, object?>>> rows = new();
+
+        foreach (DataRow row in ds.Tables[0].Rows)
+        {
+            List<KeyValuePair<string, object?>> rowList = new(ds.Tables[0].Columns.Count);
+
+            foreach (DataColumn column in ds.Tables[0].Columns)
+            {
+                rowList.Add(new(column.ColumnName, row[column] == DBNull.Value ? null : row[column]));
+            }
+
+            rows.Add(rowList);
+        }
+
+        return rows.Select(r => r.ToArray()).ToArray();
+    }
+    public object[] ExecuteFunction(string functionName, string? serializedParameters)
+    {
+        var provider = GuardHelper.GetRequired(_provider, nameof(_provider));
+        var connectionString = GuardHelper.GetRequired(_connectionString, nameof(_connectionString));
+
+        using var connection = provider.CreateConnection(connectionString);
+
+        List<string> paramPlaceholders = new();
+
+        if (serializedParameters is not null)
+        {
+            Dictionary<string, object>? parameters = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedParameters);
+
+            if (parameters is not null)
+            {
+                foreach (var param in parameters)
+                {
+                    paramPlaceholders.Add("@" + param.Key);
+                }
+            }
+        }
+
+        string sql = $"SELECT * FROM {functionName}({string.Join(", ", paramPlaceholders)})";
+        using var command = provider.CreateCommand(sql, connection);
+        command.CommandType = CommandType.Text;
+
+        if (serializedParameters is not null)
+        {
+            Dictionary<string, object>? parameters = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedParameters);
+
+            if (parameters is not null)
+            {
+                foreach (var param in parameters)
+                {
+                    command.Parameters.Add(provider.CreateParameter("@" + param.Key, param.Value is null ? DBNull.Value : param.Value.ToString()));
+                }
+            }
+        }
+
+        connection.Open();
+        using var adapter = provider.CreateDataAdapter(command);
+        DataSet ds = new();
+        adapter.Fill(ds);
+
+        if (ds.Tables.Count == 0)
+            return Array.Empty<KeyValuePair<string, object?>[]>();
+
         List<List<KeyValuePair<string, object?>>> rows = new();
 
         foreach (DataRow row in ds.Tables[0].Rows)
