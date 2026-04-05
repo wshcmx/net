@@ -3,28 +3,30 @@ using Microsoft.Data.SqlClient;
 
 namespace wshcmx.Providers;
 
-internal class SqlServerProvider : IDatabaseProvider
+internal sealed class SqlServerProvider : DatabaseProviderBase
 {
-    public DbConnection CreateConnection(string connectionString)
+
+    protected override DbConnection CreateConnection(string connectionString)
     {
         return new SqlConnection(connectionString);
     }
 
-    public DbCommand CreateCommand(string commandText, DbConnection connection)
+    protected override DbCommand CreateCommand(string commandText, DbConnection connection)
     {
         if (connection is not SqlConnection sqlConnection)
         {
             throw new ArgumentException("Connection must be of type SqlConnection.", nameof(connection));
         }
+
         return new SqlCommand(commandText, sqlConnection);
     }
 
-    public DbParameter CreateParameter(string name, object? value)
+    protected override DbParameter CreateParameter(string name, object? value)
     {
         return new SqlParameter(name, value ?? DBNull.Value);
     }
 
-    public DbDataAdapter CreateDataAdapter(DbCommand command)
+    protected override DbDataAdapter CreateDataAdapter(DbCommand command)
     {
         return new SqlDataAdapter((SqlCommand)command);
     }
