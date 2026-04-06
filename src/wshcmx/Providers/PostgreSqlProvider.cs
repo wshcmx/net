@@ -83,7 +83,7 @@ WHERE p.prokind = 'f'";
     private string BuildRoutineQueryCommandText(string connectionString, string routineName, Dictionary<string, object>? parameters)
     {
         string validatedRoutineName = ValidateRoutineNameAgainstAllowList(connectionString, routineName, parameters?.Count ?? 0);
-        return $"SELECT * FROM {validatedRoutineName}({string.Join(", ", parameters?.Keys.Select(ValidateRoutineParameterName).Select(GetRoutineQueryParameterName) ?? [])})";
+        return $"SELECT * FROM {validatedRoutineName}({string.Join(", ", parameters?.Keys.Select(ValidateRoutineParameterName).Select(parameterName => "@" + parameterName) ?? [])})";
     }
 
     private static string ValidateRoutineName(string routineName)

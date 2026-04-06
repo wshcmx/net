@@ -15,8 +15,6 @@ internal abstract class DatabaseProviderBase
 
     protected abstract DbDataAdapter CreateDataAdapter(DbCommand command);
 
-    protected virtual string GetRoutineQueryParameterName(string parameterName) => "@" + parameterName;
-
     internal KeyValuePair<string, object?>[][] ExecuteQuery(string connectionString, string commandText)
     {
         using var connection = CreateConnection(connectionString);
@@ -100,7 +98,7 @@ internal abstract class DatabaseProviderBase
         foreach (var param in parameters)
         {
             string parameterName = useRoutineQueryParameterNames
-                ? GetRoutineQueryParameterName(param.Key)
+                ? "@" + param.Key
                 : param.Key;
 
             command.Parameters.Add(CreateParameter(parameterName, param.Value is null ? DBNull.Value : param.Value.ToString()));
