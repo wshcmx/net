@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Data;
 using System.Data.Common;
 using Npgsql;
@@ -13,11 +12,7 @@ FROM pg_catalog.pg_proc p
 JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
 WHERE p.prokind = 'f'";
 
-    private static readonly ConcurrentDictionary<string, HashSet<string>> RoutineAllowListCache = new(StringComparer.Ordinal);
-
-    private static bool IsIdentifierStart(char ch) => ch == '_' || char.IsLetter(ch);
-
-    private static bool IsIdentifierPart(char ch) => ch == '_' || char.IsLetterOrDigit(ch);
+    private HashSet<string>? _routineAllowList;
 
     internal override object[] ExecuteProcedure(string connectionString, string procedureName, string? serializedParameters)
     {
@@ -83,7 +78,7 @@ WHERE p.prokind = 'f'";
     private string BuildRoutineQueryCommandText(string connectionString, string routineName, Dictionary<string, object>? parameters)
     {
         string validatedRoutineName = ValidateRoutineNameAgainstAllowList(connectionString, routineName, parameters?.Count ?? 0);
-        return $"SELECT * FROM {validatedRoutineName}({string.Join(", ", parameters?.Keys.Select(ValidateRoutineParameterName).Select(parameterName => "@" + parameterName) ?? [])})";
+        return $"SELECT * FROM {validatedRoutineName}({string.Join(", ", parameters?.Keys.Select(parameterName => ValidateIdentifier(parameterName, nameof(parameterName), "parameter name")).Select(parameterName => "@" + parameterName) ?? [])})";
     }
 
     private static string ValidateRoutineName(string routineName)
@@ -96,34 +91,18 @@ WHERE p.prokind = 'f'";
             throw new ArgumentException("Routine name cannot be empty.", nameof(routineName));
         }
 
-        foreach (string part in parts)
-        {
-            _ = ValidateIdentifier(part, nameof(routineName), "routine name");
-        }
+        Array.ForEach(parts, part => ValidateIdentifier(part, nameof(routineName), "routine name"));
 
         return routineName;
     }
 
-    private static string ValidateRoutineParameterName(string parameterName)
-    {
-        return ValidateIdentifier(parameterName, nameof(parameterName), "parameter name");
-    }
-
-    private static string ValidateRoutineNameAgainstAllowList(string connectionString, string routineName, int parameterCount)
+    private string ValidateRoutineNameAgainstAllowList(string connectionString, string routineName, int parameterCount)
     {
         string validatedRoutineName = ValidateRoutineName(routineName);
-        string routineKey = BuildRoutineKey(validatedRoutineName, parameterCount);
-        HashSet<string> allowList = RoutineAllowListCache.GetOrAdd(connectionString, LoadRoutineAllowList);
+        string routineKey = string.Join(".", validatedRoutineName.Split('.').Select(part => part.ToLowerInvariant())) + "|" + parameterCount;
+        HashSet<string> allowList = _routineAllowList ??= LoadRoutineAllowList(connectionString);
 
         if (allowList.Contains(routineKey))
-        {
-            return validatedRoutineName;
-        }
-
-        HashSet<string> refreshedAllowList = LoadRoutineAllowList(connectionString);
-        RoutineAllowListCache[connectionString] = refreshedAllowList;
-
-        if (refreshedAllowList.Contains(routineKey))
         {
             return validatedRoutineName;
         }
@@ -131,12 +110,12 @@ WHERE p.prokind = 'f'";
         throw new ArgumentException("Routine name is not allowed.", nameof(routineName));
     }
 
-    private static HashSet<string> LoadRoutineAllowList(string connectionString)
+    private HashSet<string> LoadRoutineAllowList(string connectionString)
     {
         HashSet<string> allowList = new(StringComparer.Ordinal);
 
-        using var connection = new NpgsqlConnection(connectionString);
-        using var command = new NpgsqlCommand(LoadRoutineAllowListSql, connection);
+        using var connection = CreateConnection(connectionString);
+        using var command = CreateCommand(LoadRoutineAllowListSql, connection);
         connection.Open();
 
         using var reader = command.ExecuteReader();
@@ -148,29 +127,23 @@ WHERE p.prokind = 'f'";
             int defaultArgumentCount = reader.GetInt16(3);
             bool isVisible = reader.GetBoolean(4);
             int minArgumentCount = maxArgumentCount - defaultArgumentCount;
+            string qualifiedRoutineKeyPrefix = string.Join(".", (schemaName + "." + routineName).Split('.').Select(part => part.ToLowerInvariant()));
+            string? visibleRoutineKeyPrefix = isVisible
+                ? string.Join(".", routineName.Split('.').Select(part => part.ToLowerInvariant()))
+                : null;
 
             for (int argumentCount = minArgumentCount; argumentCount <= maxArgumentCount; argumentCount++)
             {
-                allowList.Add(BuildRoutineKey(schemaName + "." + routineName, argumentCount));
+                allowList.Add(qualifiedRoutineKeyPrefix + "|" + argumentCount);
 
-                if (isVisible)
+                if (visibleRoutineKeyPrefix is not null)
                 {
-                    allowList.Add(BuildRoutineKey(routineName, argumentCount));
+                    allowList.Add(visibleRoutineKeyPrefix + "|" + argumentCount);
                 }
             }
         }
 
         return allowList;
-    }
-
-    private static string BuildRoutineKey(string routineName, int parameterCount)
-    {
-        return NormalizeRoutineName(routineName) + "|" + parameterCount;
-    }
-
-    private static string NormalizeRoutineName(string routineName)
-    {
-        return string.Join(".", routineName.Split('.').Select(part => part.ToLowerInvariant()));
     }
 
     private static string ValidateIdentifier(string value, string argumentName, string displayName)
@@ -180,18 +153,12 @@ WHERE p.prokind = 'f'";
             throw new ArgumentException($"{displayName} cannot be empty.", argumentName);
         }
 
-        if (!IsIdentifierStart(value[0]))
+        if (!(value[0] == '_' || char.IsLetter(value[0])))
         {
             throw new ArgumentException($"Invalid {displayName}.", argumentName);
         }
 
-        for (int i = 1; i < value.Length; i++)
-        {
-            if (!IsIdentifierPart(value[i]))
-            {
-                throw new ArgumentException($"Invalid {displayName}.", argumentName);
-            }
-        }
+        value.All(c => char.IsLetterOrDigit(c) || c == '_');
 
         return value;
     }
