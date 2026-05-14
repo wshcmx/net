@@ -1,5 +1,4 @@
-using wshcmx;
-using Xunit;
+using wshcmx.Net;
 
 namespace Test;
 
@@ -20,7 +19,7 @@ public class ProcessHelperTests
         Assert.True(result.IsSuccess);
         Assert.Contains("Hello World", result.StandardOutput);
         Assert.Empty(result.StandardError);
-        Assert.True(result.Duration > TimeSpan.Zero);
+        Assert.True(result.Duration > 0);
     }
 
     [Fact]
@@ -64,6 +63,6 @@ public class ProcessHelperTests
 
         // Assert
         Assert.True(result.StartTime <= result.ExitTime);
-        Assert.True(result.Duration >= TimeSpan.FromSeconds(1));
+        Assert.True(result.Duration >= 1000); // Should take at least 1 second due to ping delay
     }
 }

@@ -8,7 +8,7 @@ public static class Generator
     public static void Generate()
     {
         string namespaceName = "wshcmx";
-        IEnumerable<System.Type> types = Assembly.Load(namespaceName)
+        IEnumerable<Type> types = Assembly.Load(namespaceName)
             .GetTypes()
             .Where(x =>
                 !x.Name.EndsWith("Attribute") &&
@@ -65,6 +65,7 @@ public static class Generator
         if (type == typeof(string)) return "string";
         if (type == typeof(bool)) return "boolean";
         if (type == typeof(int)) return "number";
+        if (type == typeof(DateTime)) return "Date";
         if (type.IsEnum)
         {
             string[] enumValues = Enum.GetValues(type)

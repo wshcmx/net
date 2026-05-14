@@ -4,7 +4,7 @@
     <Version>1.1.0</Version>
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>latest</LangVersion>
-    <RootNamespace>wshcmx</RootNamespace>
+    <RootNamespace>wshcmx.Net</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>

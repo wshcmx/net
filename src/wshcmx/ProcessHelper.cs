@@ -1,8 +1,7 @@
-using System;
 using System.Diagnostics;
 using System.Text;
 
-namespace wshcmx;
+namespace wshcmx.Net;
 
 /// <summary>
 /// Provides helper methods for executing external processes.
@@ -73,7 +72,7 @@ public static class ProcessHelper
             errorBuilder.ToString(),
             startTime,
             exitTime,
-            stopwatch.Elapsed
+            stopwatch.Elapsed.Milliseconds
         );
     }
 }
