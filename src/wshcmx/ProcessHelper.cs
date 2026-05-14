@@ -72,7 +72,7 @@ public static class ProcessHelper
             errorBuilder.ToString(),
             startTime,
             exitTime,
-            stopwatch.Elapsed.Milliseconds
+            stopwatch.ElapsedMilliseconds
         );
     }
 }

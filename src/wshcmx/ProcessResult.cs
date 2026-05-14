@@ -3,7 +3,7 @@ namespace wshcmx.Net;
 /// <summary>
 /// Represents the result of a process execution.
 /// </summary>
-public class ProcessResult(int exitCode, string standardOutput, string standardError, DateTime startTime, DateTime exitTime, int duration)
+public class ProcessResult(int exitCode, string standardOutput, string standardError, DateTime startTime, DateTime exitTime, long duration)
 {
     /// <summary>
     /// Gets the exit code of the process.
@@ -33,7 +33,7 @@ public class ProcessResult(int exitCode, string standardOutput, string standardE
     /// <summary>
     /// Gets the total duration of the process execution in milliseconds.
     /// </summary>
-    public int Duration { get; } = duration;
+    public long Duration { get; } = duration;
 
     /// <summary>
     /// Gets a value indicating whether the process exited successfully (ExitCode == 0).
