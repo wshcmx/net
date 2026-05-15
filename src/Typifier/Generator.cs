@@ -66,6 +66,7 @@ public static class Generator
         if (type == typeof(bool)) return "boolean";
         if (type == typeof(int)) return "number";
         if (type == typeof(DateTime)) return "Date";
+        if (type == typeof(long)) return "number";
         if (type.IsEnum)
         {
             string[] enumValues = Enum.GetValues(type)
