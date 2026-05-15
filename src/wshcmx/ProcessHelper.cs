@@ -80,8 +80,9 @@ public static class ProcessHelper
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 
-        var completed = WaitForCompletion(process, stdoutClosed, stderrClosed, timeoutMilliseconds);
-        if (!completed)
+        var isCompleted = WaitForCompletion(process, stdoutClosed, stderrClosed, timeoutMilliseconds);
+
+        if (!isCompleted)
         {
             TryKillProcess(process);
         }
@@ -92,22 +93,20 @@ public static class ProcessHelper
         stopwatch.Stop();
         var exitTime = DateTime.Now;
         var exitCode = 1;
+
         try
         {
             process.Refresh();
             exitCode = process.ExitCode;
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException) when (isCompleted)
         {
-            if (completed)
-            {
-                exitCode = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && errorBuilder.Length == 0 ? 0 : exitCode;
-            }
+            exitCode = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && errorBuilder.Length == 0 ? 0 : exitCode;
         }
 
         return new ProcessResult(
             exitCode,
-            completed,
+            isCompleted,
             outputBuilder.ToString(),
             errorBuilder.ToString(),
             startTime,
