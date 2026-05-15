@@ -8,7 +8,7 @@ public static class Generator
     public static void Generate()
     {
         string namespaceName = "wshcmx";
-        IEnumerable<System.Type> types = Assembly.Load(namespaceName)
+        IEnumerable<Type> types = Assembly.Load(namespaceName)
             .GetTypes()
             .Where(x =>
                 !x.Name.EndsWith("Attribute") &&
@@ -33,6 +33,17 @@ public static class Generator
 
             foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly | BindingFlags.Static))
             {
+                if (method.IsSpecialName)
+                {
+                    string propertyName = method.Name[4..];
+                    var property = type.GetProperty(propertyName);
+
+                    if (property != null)
+                    {
+                        sb.AppendLine($"      {propertyName}: {MapType(property.PropertyType)};");
+                        continue;
+                    }
+                }
                 List<string> parameters = [];
 
                 foreach (var parameter in method.GetParameters())
@@ -65,6 +76,8 @@ public static class Generator
         if (type == typeof(string)) return "string";
         if (type == typeof(bool)) return "boolean";
         if (type == typeof(int)) return "number";
+        if (type == typeof(DateTime)) return "Date";
+        if (type == typeof(long)) return "number";
         if (type.IsEnum)
         {
             string[] enumValues = Enum.GetValues(type)

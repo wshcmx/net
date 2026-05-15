@@ -1,6 +1,6 @@
 using System.Data.Common;
 
-namespace wshcmx;
+namespace wshcmx.Net;
 
 public interface IDatabaseProvider
 {

@@ -1,7 +1,7 @@
 using System.Data.Common;
 using Npgsql;
 
-namespace wshcmx.Providers;
+namespace wshcmx.Net.Providers;
 
 internal class PostgreSqlProvider : IDatabaseProvider
 {

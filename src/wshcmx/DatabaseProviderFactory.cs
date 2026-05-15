@@ -1,6 +1,6 @@
-using wshcmx.Providers;
+using wshcmx.Net.Providers;
 
-namespace wshcmx;
+namespace wshcmx.Net;
 
 internal static class DatabaseProviderFactory
 {

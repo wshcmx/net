@@ -1,4 +1,4 @@
-namespace wshcmx;
+namespace wshcmx.Net;
 
 public enum DatabaseType
 {

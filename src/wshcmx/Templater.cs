@@ -1,6 +1,6 @@
 using Mustache;
 
-namespace wshcmx;
+namespace wshcmx.Net;
 
 public static class Templater
 {

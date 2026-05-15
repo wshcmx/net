@@ -1,4 +1,4 @@
-namespace wshcmx;
+namespace wshcmx.Net;
 
 internal static class GuardHelper
 {

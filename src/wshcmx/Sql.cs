@@ -2,7 +2,7 @@ using System.Data;
 using System.Text.Json;
 using System.Linq.Dynamic.Core;
 
-namespace wshcmx;
+namespace wshcmx.Net;
 
 public class Sql
 {
