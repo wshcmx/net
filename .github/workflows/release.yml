@@ -5,6 +5,10 @@ on:
     types:
       - created
 
+permissions:
+  id-token: write
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -25,8 +29,52 @@ jobs:
           name: wshcmx-linux-x64
           path: wshcmx-linux-x64.zip
 
-  release:
+  publish-npm:
     needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.x
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - name: Generate TypeScript types
+        run: dotnet run --project src/Typifier/Typifier.csproj --configuration Release
+      - name: Compare .NET and types versions
+        shell: bash
+        run: |
+          dotnet_version="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' src/wshcmx/wshcmx.csproj | head -n 1)"
+          types_version="$(sed -n 's/.*"version": "\(.*\)".*/\1/p' src/Typifier/types/package.json | head -n 1)"
+          if [ -z "$dotnet_version" ]; then
+            echo "Version element not found in src/wshcmx/wshcmx.csproj"
+            exit 1
+          fi
+          if [ -z "$types_version" ]; then
+            echo "Version field not found in src/Typifier/types/package.json"
+            exit 1
+          fi
+          if [ "$dotnet_version" != "$types_version" ]; then
+            echo "Version mismatch: src/wshcmx/wshcmx.csproj=$dotnet_version, src/Typifier/types/package.json=$types_version"
+            exit 1
+          fi
+          echo "Version match: $dotnet_version"
+      - name: Preview npm package
+        working-directory: src/Typifier/types
+        run: npm pack --dry-run
+      - name: Publish npm package
+        working-directory: src/Typifier/types
+        run: npm publish --provenance
+
+  release:
+    needs:
+      - build
+      - publish-npm
     runs-on: ubuntu-latest
 
     steps:
