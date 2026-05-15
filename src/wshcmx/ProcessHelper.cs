@@ -99,9 +99,6 @@ public static class ProcessHelper
         }
         catch (InvalidOperationException)
         {
-            Console.WriteLine($"Completed: {completed}, but process has not exited and exit code is unavailable.");
-            Console.WriteLine($"Stdout: {outputBuilder}");
-            Console.WriteLine($"Stderr: {errorBuilder}");
             if (completed)
             {
                 exitCode = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && errorBuilder.Length == 0 ? 0 : exitCode;
