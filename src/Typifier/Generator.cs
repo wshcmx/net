@@ -33,6 +33,17 @@ public static class Generator
 
             foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly | BindingFlags.Static))
             {
+                if (method.IsSpecialName)
+                {
+                    string propertyName = method.Name[4..];
+                    var property = type.GetProperty(propertyName);
+
+                    if (property != null)
+                    {
+                        sb.AppendLine($"      {propertyName}: {MapType(property.PropertyType)};");
+                        continue;
+                    }
+                }
                 List<string> parameters = [];
 
                 foreach (var parameter in method.GetParameters())
