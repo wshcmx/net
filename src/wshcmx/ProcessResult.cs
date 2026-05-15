@@ -3,12 +3,14 @@ namespace wshcmx.Net;
 /// <summary>
 /// Represents the result of a process execution.
 /// </summary>
-public class ProcessResult(int exitCode, string standardOutput, string standardError, DateTime startTime, DateTime exitTime, long duration)
+public class ProcessResult(int exitCode, bool completed, string standardOutput, string standardError, DateTime startTime, DateTime exitTime, long duration)
 {
     /// <summary>
     /// Gets the exit code of the process.
     /// </summary>
     public int ExitCode { get; } = exitCode;
+
+    public bool Completed { get; } = completed;
 
     /// <summary>
     /// Gets the standard output of the process.
