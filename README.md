@@ -2,12 +2,14 @@
 
 [![Build](https://github.com/wshcmx/net/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/wshcmx/net/actions/workflows/build.yml)
 
-Подключаемая .NET библиотека для работы в окружении WebSoft HCM. Предоставляет функции для выполнения SQL-запросов и рендеринга шаблонов, доступные из скриптового языка платформы.
+Подключаемая .NET библиотека для работы в окружении WebSoft HCM. Предоставляет функции для выполнения SQL-запросов, рендеринга шаблонов и запуска внешних процессов, доступные из скриптового языка платформы.
 
 ## Возможности
 
-- **Sql** — выполнение SQL-запросов, хранимых процедур и процедур с пагинацией к MS SQL Server
+- **Sql** — выполнение SQL-запросов, хранимых процедур и процедур с пагинацией для `SqlServer` и `PostgreSql`
 - **Templater** — рендеринг Mustache-шаблонов из строки или файла
+- **ProcessHelper** — запуск внешних процессов с захватом stdout, stderr, кода завершения и времени выполнения
+- **Typifier** — генерация TypeScript-типов для публичных классов сборки
 
 ## Подключение
 
@@ -28,6 +30,8 @@ tools.dotnet_host?.Object.GetAssembly("wshcmx.dll")
 ```js
 // Инициализация подключения
 Sql.Init(connectionString)
+Sql.Init(connectionString, DatabaseType.PostgreSql)
+Sql.Init(connectionString, 1) // PostgreSql
 
 // Выполнение произвольного SQL-запроса
 Sql.ExecuteQuery(commandText) // → KeyValuePair<string, object>[][]
@@ -43,6 +47,11 @@ Sql.ExecuteProcedure(procedureName, serializedParameters?) // → object[]
 Sql.ExecutePaginationProcedure(procedureName, serializedOptions, serializedParameters) // → [totalCount, rows]
 ```
 
+Поддерживаемые значения `DatabaseType`:
+
+- `SqlServer` — значение по умолчанию
+- `PostgreSql`
+
 ### Templater
 
 ```js
@@ -50,23 +59,49 @@ Sql.ExecutePaginationProcedure(procedureName, serializedOptions, serializedParam
 Templater.Generate(template, data) // → string
 ```
 
+### ProcessHelper
+
+```js
+// Выполнение внешней команды
+ProcessHelper.Execute(command, arguments?, workingDirectory?, timeoutMilliseconds?) // → ProcessResult
+```
+
+`ProcessResult` содержит:
+
+- `ExitCode`
+- `Completed`
+- `IsSuccess`
+- `StandardOutput`
+- `StandardError`
+- `StartTime`
+- `ExitTime`
+- `Duration`
+
 ## Структура проекта
 
 | Проект | Описание |
 |---|---|
 | `src/wshcmx` | Основная библиотека |
-| `src/Typifier` | CLI-утилита для генерации TypeScript-типов из .NET сборки |
+| `src/Typifier` | CLI-утилита для генерации TypeScript-типов в `src\Typifier\types\index.d.ts` |
 | `src/Test` | Тесты |
 
 ## Сборка
 
 ```bash
-dotnet build
+dotnet build wshcmx.slnx
+```
+
+## Тесты
+
+```bash
+dotnet test wshcmx.slnx --no-logo
 ```
 
 ## Генерация TypeScript-типов
 
 ```bash
-dotnet build src/wshcmx
-dotnet run --project src/Typifier -- --assembly src\wshcmx\bin\Debug\netstandard2.0\wshcmx.dll --output types/wshcmx.d.ts
+dotnet build wshcmx.slnx
+dotnet run --project src\Typifier\Typifier.csproj
 ```
+
+Сгенерированный файл сохраняется в `src\Typifier\types\index.d.ts`.
