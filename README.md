@@ -8,7 +8,7 @@
 
 - **Sql** — выполнение SQL-запросов, хранимых процедур и процедур с пагинацией для `SqlServer` и `PostgreSql`
 - **Templater** — рендеринг Mustache-шаблонов из строки или файла
-- **ProcessHelper** — запуск внешних процессов с захватом stdout, stderr, кода завершения и времени выполнения
+- **ProcessExecutor** — запуск внешних процессов с захватом stdout, stderr, кода завершения и времени выполнения
 - **Typifier** — генерация TypeScript-типов для публичных классов сборки
 
 ## Подключение
@@ -59,11 +59,11 @@ Sql.ExecutePaginationProcedure(procedureName, serializedOptions, serializedParam
 Templater.Generate(template, data) // → string
 ```
 
-### ProcessHelper
+### ProcessExecutor
 
 ```js
 // Выполнение внешней команды
-ProcessHelper.Execute(command, arguments?, workingDirectory?, timeoutMilliseconds?) // → ProcessResult
+ProcessExecutor.Execute(command, arguments?, workingDirectory?, timeoutMilliseconds?) // → ProcessResult
 ```
 
 `ProcessResult` содержит:

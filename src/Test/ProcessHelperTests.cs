@@ -3,7 +3,7 @@ using wshcmx.Net;
 
 namespace Test;
 
-public class ProcessHelperTests
+public class ProcessExecutorTests
 {
     private static (string Command, string Arguments) Shell(string script)
     {
@@ -31,7 +31,7 @@ public class ProcessHelperTests
     {
         var (command, arguments) = Shell("echo Hello World");
 
-        var result = ProcessHelper.Execute(command, arguments);
+        var result = ProcessExecutor.Execute(command, arguments);
 
         Assert.Equal(0, result.ExitCode);
         Assert.True(result.IsSuccess);
@@ -45,7 +45,7 @@ public class ProcessHelperTests
     {
         var (command, arguments) = Shell("exit 1");
 
-        var result = ProcessHelper.Execute(command, arguments);
+        var result = ProcessExecutor.Execute(command, arguments);
 
         Assert.Equal(1, result.ExitCode);
         Assert.False(result.IsSuccess);
@@ -56,7 +56,7 @@ public class ProcessHelperTests
     {
         var (command, arguments) = Shell("echo error message >&2");
 
-        var result = ProcessHelper.Execute(command, arguments);
+        var result = ProcessExecutor.Execute(command, arguments);
 
         Assert.Contains("error message", result.StandardError);
     }
@@ -68,7 +68,7 @@ public class ProcessHelperTests
             ? ("cmd.exe", "/c ping 127.0.0.1 -n 3 >nul")
             : ("/bin/sh", "-c \"sleep 2\"");
 
-        var result = ProcessHelper.Execute(command, arguments);
+        var result = ProcessExecutor.Execute(command, arguments);
 
         Assert.True(result.StartTime <= result.ExitTime);
         Assert.True(result.Duration >= 1500);
@@ -80,7 +80,7 @@ public class ProcessHelperTests
         var (command, arguments) = Shell("echo Hello World");
 
         var exception = Assert.Throws<ArgumentOutOfRangeException>(() =>
-            ProcessHelper.Execute(command, arguments, timeoutMilliseconds: -2));
+            ProcessExecutor.Execute(command, arguments, timeoutMilliseconds: -2));
 
         Assert.Equal("timeoutMilliseconds", exception.ParamName);
     }
@@ -90,7 +90,7 @@ public class ProcessHelperTests
     {
         var (command, arguments) = SleepCommand(2);
 
-        var result = ProcessHelper.Execute(command, arguments, timeoutMilliseconds: 100);
+        var result = ProcessExecutor.Execute(command, arguments, timeoutMilliseconds: 100);
 
         Assert.False(result.Completed);
         Assert.False(result.IsSuccess);
@@ -100,14 +100,14 @@ public class ProcessHelperTests
     [Fact]
     public void Execute_WithWorkingDirectory_RunsProcessInSpecifiedDirectory()
     {
-        var workingDirectory = Path.Combine(Path.GetTempPath(), $"{nameof(ProcessHelperTests)}-{Guid.NewGuid():N}");
+        var workingDirectory = Path.Combine(Path.GetTempPath(), $"{nameof(ProcessExecutorTests)}-{Guid.NewGuid():N}");
         Directory.CreateDirectory(workingDirectory);
 
         try
         {
             var (command, arguments) = CurrentDirectoryCommand();
 
-            var result = ProcessHelper.Execute(command, arguments, workingDirectory: workingDirectory);
+            var result = ProcessExecutor.Execute(command, arguments, workingDirectory: workingDirectory);
 
             var actualDirectory = result.StandardOutput.Trim();
             Assert.True(result.Completed);
@@ -130,7 +130,7 @@ public class ProcessHelperTests
     {
         var (command, arguments) = SleepCommand(1);
 
-        var result = ProcessHelper.Execute(command, arguments, timeoutMilliseconds: Timeout.Infinite);
+        var result = ProcessExecutor.Execute(command, arguments, timeoutMilliseconds: Timeout.Infinite);
 
         Assert.True(result.Completed);
         Assert.True(result.IsSuccess);
