@@ -10,10 +10,6 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v6
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v5
-      with:
-        dotnet-version: 10.x
     - name: Build
       run: dotnet build wshcmx.slnx --configuration Release
     - name: Test
@@ -23,10 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v5
-      with:
-        dotnet-version: 10.x
     - name: Format check
       run: dotnet format --verify-no-changes --verbosity normal
     - name: Build
