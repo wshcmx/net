@@ -2,8 +2,9 @@ using System.Data;
 using System.Data.Common;
 using System.Text.Json;
 using System.Linq.Dynamic.Core;
+using wshcmx.Net;
 
-namespace wshcmx.Providers;
+namespace wshcmx.Net.Providers;
 
 internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : DbConnection, new()
 {
