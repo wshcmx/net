@@ -2,7 +2,6 @@ using System.Data;
 using System.Data.Common;
 using System.Text.Json;
 using System.Linq.Dynamic.Core;
-using wshcmx.Net;
 
 namespace wshcmx.Net.Providers;
 
@@ -67,6 +66,10 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
         using var adapter = CreateDataAdapter(command);
         var ds = new DataSet();
         adapter.Fill(ds);
+
+        if (ds.Tables.Count < 1)
+            throw new InvalidOperationException($"Stored procedure '{procedureName}' returned no result sets.");
+
         var rows = new List<List<KeyValuePair<string, object?>>>();
 
         foreach (DataRow row in ds.Tables[0].Rows)
@@ -86,6 +89,7 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
 
     public object[] ExecutePaginationProcedure(string procedureName, string serializedOptions, string serializedParameters)
     {
+        GuardHelper.ThrowIfNull(serializedParameters, nameof(serializedParameters));
         var options = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedOptions);
 
         _ = int.TryParse(GuardHelper.GetDictionaryValue(options, "page")?.ToString(), out int page);
@@ -114,6 +118,9 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
         using var adapter = CreateDataAdapter(command);
         var ds = new DataSet();
         adapter.Fill(ds);
+
+        if (ds.Tables.Count < 2 || ds.Tables[1].Rows.Count == 0 || ds.Tables[1].Columns.Count == 0)
+            throw new InvalidOperationException($"Stored procedure '{procedureName}' must return two result sets; the second must contain the total row count.");
 
         var intermediateResult = ds.Tables[0].Rows.Cast<DataRow>().AsQueryable();
 
@@ -151,8 +158,16 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
     private T OpenConnection()
     {
         var connection = new T();
-        connection.ConnectionString = _connectionString;
-        connection.Open();
+        try
+        {
+            connection.ConnectionString = _connectionString;
+            connection.Open();
+        }
+        catch
+        {
+            connection.Dispose();
+            throw;
+        }
         return connection;
     }
 

@@ -1,6 +1,6 @@
 namespace wshcmx.Net;
 
-public interface IDatabaseProvider
+internal interface IDatabaseProvider
 {
     KeyValuePair<string, object?>[][] ExecuteQuery(string commandText);
     void ExecuteNonQuery(string commandText);
