@@ -99,11 +99,21 @@ public class DatabaseProviderBaseTests : IDisposable
     }
 
     [Fact]
-    public void ExecutePaginationProcedure_NullSerializedParameters_ThrowsWithCorrectParamName()
+    public void ExecutePaginationProcedure_NullSerializedOptions_ThrowsWithCorrectParamName()
     {
         var provider = new FakeProvider();
 
-        var ex = Assert.Throws<ArgumentNullException>(() => provider.ExecutePaginationProcedure("sp", null!, null!));
+        var ex = Assert.Throws<ArgumentNullException>(() => provider.ExecutePaginationProcedure("sp", null!, "{}"));
+        Assert.Equal("serializedOptions", ex.ParamName);
+    }
+
+    [Fact]
+    public void ExecutePaginationProcedure_NullSerializedParameters_ThrowsWithCorrectParamName()
+    {
+        var provider = new FakeProvider();
+        var options = JsonSerializer.Serialize(new Dictionary<string, object> { ["page"] = 1, ["size"] = 10 });
+
+        var ex = Assert.Throws<ArgumentNullException>(() => provider.ExecutePaginationProcedure("sp", options, null!));
         Assert.Equal("serializedParameters", ex.ParamName);
     }
 

@@ -89,6 +89,7 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
 
     public object[] ExecutePaginationProcedure(string procedureName, string serializedOptions, string serializedParameters)
     {
+        GuardHelper.ThrowIfNull(serializedOptions, nameof(serializedOptions));
         GuardHelper.ThrowIfNull(serializedParameters, nameof(serializedParameters));
         var options = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedOptions);
 
