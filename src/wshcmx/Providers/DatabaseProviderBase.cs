@@ -18,7 +18,9 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
     {
         GuardHelper.ThrowIfNull(commandText, nameof(commandText));
 
-        using var connection = OpenConnection();
+        using var connection = CreateConnection();
+        connection.ConnectionString = _connectionString;
+        connection.Open();
         using var command = CreateTypedCommand(commandText, connection);
         using var reader = command.ExecuteReader();
 
@@ -43,7 +45,9 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
     {
         GuardHelper.ThrowIfNull(commandText, nameof(commandText));
 
-        using var connection = OpenConnection();
+        using var connection = CreateConnection();
+        connection.ConnectionString = _connectionString;
+        connection.Open();
         using var command = CreateTypedCommand(commandText, connection);
         command.ExecuteNonQuery();
     }
@@ -58,7 +62,9 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
             parameters = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedParameters);
         }
 
-        using var connection = OpenConnection();
+        using var connection = CreateConnection();
+        connection.ConnectionString = _connectionString;
+        connection.Open();
         using var command = CreateTypedCommand(procedureName, connection);
         command.CommandType = CommandType.StoredProcedure;
 
@@ -120,7 +126,9 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
 
         var parameters = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedParameters);
 
-        using var connection = OpenConnection();
+        using var connection = CreateConnection();
+        connection.ConnectionString = _connectionString;
+        connection.Open();
         using var command = CreateTypedCommand(procedureName, connection);
         command.CommandType = CommandType.StoredProcedure;
 
@@ -177,20 +185,9 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
         return new object[] { total, rows.Select(r => r.ToArray()).ToArray() };
     }
 
-    private T OpenConnection()
+    private static T CreateConnection()
     {
-        var connection = new T();
-        try
-        {
-            connection.ConnectionString = _connectionString;
-            connection.Open();
-        }
-        catch
-        {
-            connection.Dispose();
-            throw;
-        }
-        return connection;
+        return new T();
     }
 
     protected abstract DbCommand CreateTypedCommand(string commandText, T connection);

@@ -301,7 +301,7 @@ public class DatabaseProviderBaseTests : IDisposable
     }
 
     [Fact]
-    public void OpenConnection_WhenOpenThrows_DisposesConnection()
+    public void Connection_WhenOpenThrows_IsDisposed()
     {
         FakeDbConnection.OpenShouldThrow = true;
         var provider = new FakeProvider();
@@ -314,7 +314,7 @@ public class DatabaseProviderBaseTests : IDisposable
     }
 
     [Fact]
-    public void OpenConnection_WhenOpenSucceeds_OpensAndDisposes()
+    public void Connection_WhenOpenSucceeds_IsOpenedAndDisposed()
     {
         var provider = new FakeProvider();
 
