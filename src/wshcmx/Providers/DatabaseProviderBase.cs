@@ -17,6 +17,7 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
     public KeyValuePair<string, object?>[][] ExecuteQuery(string commandText)
     {
         GuardHelper.ThrowIfNull(commandText, nameof(commandText));
+        GuardHelper.ThrowIfWhiteSpace(commandText, nameof(commandText));
 
         using var connection = CreateConnection();
         connection.ConnectionString = _connectionString;
@@ -44,6 +45,7 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
     public void ExecuteNonQuery(string commandText)
     {
         GuardHelper.ThrowIfNull(commandText, nameof(commandText));
+        GuardHelper.ThrowIfWhiteSpace(commandText, nameof(commandText));
 
         using var connection = CreateConnection();
         connection.ConnectionString = _connectionString;
@@ -55,6 +57,7 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
     public object[] ExecuteProcedure(string procedureName, string? serializedParameters)
     {
         GuardHelper.ThrowIfNull(procedureName, nameof(procedureName));
+        GuardHelper.ThrowIfWhiteSpace(procedureName, nameof(procedureName));
 
         Dictionary<string, object>? parameters = null;
         if (serializedParameters is not null)
@@ -105,6 +108,7 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
     public object[] ExecutePaginationProcedure(string procedureName, string serializedOptions, string serializedParameters)
     {
         GuardHelper.ThrowIfNull(procedureName, nameof(procedureName));
+        GuardHelper.ThrowIfWhiteSpace(procedureName, nameof(procedureName));
         GuardHelper.ThrowIfNull(serializedOptions, nameof(serializedOptions));
         GuardHelper.ThrowIfNull(serializedParameters, nameof(serializedParameters));
         var options = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedOptions);

@@ -240,11 +240,31 @@ public class DatabaseProviderBaseTests
         Assert.Equal("commandText", ex.ParamName);
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void ExecuteQuery_WhitespaceCommandText_ThrowsArgumentException(string commandText)
+    {
+        var provider = new FakeProvider();
+        var ex = Assert.Throws<ArgumentException>(() => provider.ExecuteQuery(commandText));
+        Assert.Equal("commandText", ex.ParamName);
+    }
+
     [Fact]
     public void ExecuteNonQuery_NullCommandText_ThrowsArgumentNullException()
     {
         var provider = new FakeProvider();
         var ex = Assert.Throws<ArgumentNullException>(() => provider.ExecuteNonQuery(null!));
+        Assert.Equal("commandText", ex.ParamName);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void ExecuteNonQuery_WhitespaceCommandText_ThrowsArgumentException(string commandText)
+    {
+        var provider = new FakeProvider();
+        var ex = Assert.Throws<ArgumentException>(() => provider.ExecuteNonQuery(commandText));
         Assert.Equal("commandText", ex.ParamName);
     }
 
@@ -256,11 +276,31 @@ public class DatabaseProviderBaseTests
         Assert.Equal("procedureName", ex.ParamName);
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void ExecuteProcedure_WhitespaceProcedureName_ThrowsArgumentException(string procedureName)
+    {
+        var provider = new FakeProvider();
+        var ex = Assert.Throws<ArgumentException>(() => provider.ExecuteProcedure(procedureName, null));
+        Assert.Equal("procedureName", ex.ParamName);
+    }
+
     [Fact]
     public void ExecutePaginationProcedure_NullProcedureName_ThrowsArgumentNullException()
     {
         var provider = new FakeProvider();
         var ex = Assert.Throws<ArgumentNullException>(() => provider.ExecutePaginationProcedure(null!, "{}", "{}"));
+        Assert.Equal("procedureName", ex.ParamName);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void ExecutePaginationProcedure_WhitespaceProcedureName_ThrowsArgumentException(string procedureName)
+    {
+        var provider = new FakeProvider();
+        var ex = Assert.Throws<ArgumentException>(() => provider.ExecutePaginationProcedure(procedureName, "{}", "{}"));
         Assert.Equal("procedureName", ex.ParamName);
     }
 
