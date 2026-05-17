@@ -16,10 +16,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v5
-        with:
-          dotnet-version: 10.x
       - name: Publish portable library output
         run: dotnet publish src/wshcmx -f netstandard2.0 -c Release -o ./publish
       - name: Create ZIP
@@ -36,15 +32,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v5
-        with:
-          dotnet-version: 10.x
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org
       - name: Generate TypeScript types
         run: dotnet run --project src/Typifier/Typifier.csproj --configuration Release
       - name: Compare .NET and types versions
