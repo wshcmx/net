@@ -16,6 +16,8 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
 
     public KeyValuePair<string, object?>[][] ExecuteQuery(string commandText)
     {
+        GuardHelper.ThrowIfNull(commandText, nameof(commandText));
+
         using var connection = OpenConnection();
         using var command = CreateTypedCommand(commandText, connection);
         using var reader = command.ExecuteReader();
@@ -39,6 +41,8 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
 
     public void ExecuteNonQuery(string commandText)
     {
+        GuardHelper.ThrowIfNull(commandText, nameof(commandText));
+
         using var connection = OpenConnection();
         using var command = CreateTypedCommand(commandText, connection);
         command.ExecuteNonQuery();
@@ -46,20 +50,23 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
 
     public object[] ExecuteProcedure(string procedureName, string? serializedParameters)
     {
+        GuardHelper.ThrowIfNull(procedureName, nameof(procedureName));
+
+        Dictionary<string, object>? parameters = null;
+        if (serializedParameters is not null)
+        {
+            parameters = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedParameters);
+        }
+
         using var connection = OpenConnection();
         using var command = CreateTypedCommand(procedureName, connection);
         command.CommandType = CommandType.StoredProcedure;
 
-        if (serializedParameters is not null)
+        if (parameters is not null)
         {
-            var parameters = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedParameters);
-
-            if (parameters is not null)
+            foreach (var param in parameters)
             {
-                foreach (var param in parameters)
-                {
-                    command.Parameters.Add(CreateParameter(param.Key, param.Value?.ToString()));
-                }
+                command.Parameters.Add(CreateParameter(param.Key, param.Value?.ToString()));
             }
         }
 
@@ -68,7 +75,9 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
         adapter.Fill(ds);
 
         if (ds.Tables.Count < 1)
+        {
             throw new InvalidOperationException($"Stored procedure '{procedureName}' returned no result sets.");
+        }
 
         var rows = new List<List<KeyValuePair<string, object?>>>();
 
@@ -89,15 +98,22 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
 
     public object[] ExecutePaginationProcedure(string procedureName, string serializedOptions, string serializedParameters)
     {
+        GuardHelper.ThrowIfNull(procedureName, nameof(procedureName));
         GuardHelper.ThrowIfNull(serializedOptions, nameof(serializedOptions));
         GuardHelper.ThrowIfNull(serializedParameters, nameof(serializedParameters));
         var options = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedOptions);
 
         _ = int.TryParse(GuardHelper.GetDictionaryValue(options, "page")?.ToString(), out int page);
-        if (page < 1) page = 1;
+        if (page < 1)
+        {
+            page = 1;
+        }
 
         _ = int.TryParse(GuardHelper.GetDictionaryValue(options, "size")?.ToString(), out int size);
-        if (size < 1 || size > 400) size = 400;
+        if (size < 1 || size > 400)
+        {
+            size = 400;
+        }
 
         string select = GuardHelper.GetDictionaryValue(options, "select")?.ToString() ?? string.Empty;
         string orderby = GuardHelper.GetDictionaryValue(options, "orderby")?.ToString() ?? string.Empty;
@@ -121,7 +137,9 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
         adapter.Fill(ds);
 
         if (ds.Tables.Count < 2 || ds.Tables[1].Rows.Count == 0 || ds.Tables[1].Columns.Count == 0)
+        {
             throw new InvalidOperationException($"Stored procedure '{procedureName}' must return two result sets; the second must contain the total row count.");
+        }
 
         var intermediateResult = ds.Tables[0].Rows.Cast<DataRow>().AsQueryable();
 
@@ -145,7 +163,10 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
 
             foreach (DataColumn column in ds.Tables[0].Columns)
             {
-                if (hasSelect && !columns.Contains(column.ColumnName)) continue;
+                if (hasSelect && !columns.Contains(column.ColumnName))
+                {
+                    continue;
+                }
                 rowList.Add(new(column.ColumnName, row[column] == DBNull.Value ? null : row[column]));
             }
 

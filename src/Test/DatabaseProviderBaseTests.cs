@@ -180,7 +180,7 @@ public class DatabaseProviderBaseTests : IDisposable
         ds.Tables.Add(BuildTable(["id"], [1], [2], [3], [4], [5]));
         ds.Tables.Add(BuildTable(["total"], [5]));
         var provider = new FakeProvider { AdapterResult = ds };
-        var options = JsonSerializer.Serialize(new Dictionary<string, object> { ["page"] = 2, ["size"] = 2 });
+        var options = JsonSerializer.Serialize(new Dictionary<string, object> { ["page"] = 2, ["size"] = 2, ["orderby"] = "it[\"id\"]" });
 
         var result = provider.ExecutePaginationProcedure("sp", options, "{}");
 
@@ -188,6 +188,89 @@ public class DatabaseProviderBaseTests : IDisposable
         Assert.Equal(2, rows.Length);
         Assert.Equal(3, rows[0][0].Value);
         Assert.Equal(4, rows[1][0].Value);
+    }
+
+    [Fact]
+    public void ExecutePaginationProcedure_AppliesOrderbyAscending()
+    {
+        var ds = new DataSet();
+        ds.Tables.Add(BuildTable(["id"], [3], [1], [2]));
+        ds.Tables.Add(BuildTable(["total"], [3]));
+        var provider = new FakeProvider { AdapterResult = ds };
+        var options = JsonSerializer.Serialize(new Dictionary<string, object>
+        {
+            ["page"] = 1, ["size"] = 10, ["orderby"] = "it[\"id\"]"
+        });
+
+        var result = provider.ExecutePaginationProcedure("sp", options, "{}");
+
+        var rows = Assert.IsType<KeyValuePair<string, object?>[][]>(result[1]);
+        Assert.Equal(3, rows.Length);
+        Assert.Equal(1, rows[0][0].Value);
+        Assert.Equal(2, rows[1][0].Value);
+        Assert.Equal(3, rows[2][0].Value);
+    }
+
+    [Fact]
+    public void ExecutePaginationProcedure_AppliesOrderbyDescending()
+    {
+        var ds = new DataSet();
+        ds.Tables.Add(BuildTable(["id"], [1], [3], [2]));
+        ds.Tables.Add(BuildTable(["total"], [3]));
+        var provider = new FakeProvider { AdapterResult = ds };
+        var options = JsonSerializer.Serialize(new Dictionary<string, object>
+        {
+            ["page"] = 1, ["size"] = 10, ["orderby"] = "it[\"id\"] desc"
+        });
+
+        var result = provider.ExecutePaginationProcedure("sp", options, "{}");
+
+        var rows = Assert.IsType<KeyValuePair<string, object?>[][]>(result[1]);
+        Assert.Equal(3, rows[0][0].Value);
+        Assert.Equal(2, rows[1][0].Value);
+        Assert.Equal(1, rows[2][0].Value);
+    }
+
+    [Fact]
+    public void ExecuteQuery_NullCommandText_ThrowsArgumentNullException()
+    {
+        var provider = new FakeProvider();
+        var ex = Assert.Throws<ArgumentNullException>(() => provider.ExecuteQuery(null!));
+        Assert.Equal("commandText", ex.ParamName);
+    }
+
+    [Fact]
+    public void ExecuteNonQuery_NullCommandText_ThrowsArgumentNullException()
+    {
+        var provider = new FakeProvider();
+        var ex = Assert.Throws<ArgumentNullException>(() => provider.ExecuteNonQuery(null!));
+        Assert.Equal("commandText", ex.ParamName);
+    }
+
+    [Fact]
+    public void ExecuteProcedure_NullProcedureName_ThrowsArgumentNullException()
+    {
+        var provider = new FakeProvider();
+        var ex = Assert.Throws<ArgumentNullException>(() => provider.ExecuteProcedure(null!, null));
+        Assert.Equal("procedureName", ex.ParamName);
+    }
+
+    [Fact]
+    public void ExecutePaginationProcedure_NullProcedureName_ThrowsArgumentNullException()
+    {
+        var provider = new FakeProvider();
+        var ex = Assert.Throws<ArgumentNullException>(() => provider.ExecutePaginationProcedure(null!, "{}", "{}"));
+        Assert.Equal("procedureName", ex.ParamName);
+    }
+
+    [Fact]
+    public void ExecuteProcedure_MalformedJson_DoesNotOpenConnection()
+    {
+        var provider = new FakeProvider();
+
+        Assert.ThrowsAny<Exception>(() => provider.ExecuteProcedure("sp", "not-json"));
+
+        Assert.Empty(FakeDbConnection.Instances);
     }
 
     [Fact]
