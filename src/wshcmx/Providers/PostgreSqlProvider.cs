@@ -3,28 +3,19 @@ using Npgsql;
 
 namespace wshcmx.Net.Providers;
 
-internal class PostgreSqlProvider : IDatabaseProvider
+internal class PostgreSqlProvider(string connectionString) : DatabaseProviderBase<NpgsqlConnection>(connectionString)
 {
-    public DbConnection CreateConnection(string connectionString)
+    protected override DbCommand CreateTypedCommand(string commandText, NpgsqlConnection connection)
     {
-        return new NpgsqlConnection(connectionString);
+        return new NpgsqlCommand(commandText, connection);
     }
 
-    public DbCommand CreateCommand(string commandText, DbConnection connection)
-    {
-        if (connection is not NpgsqlConnection npgsqlConnection)
-        {
-            throw new ArgumentException("Connection must be of type NpgsqlConnection.", nameof(connection));
-        }
-        return new NpgsqlCommand(commandText, npgsqlConnection);
-    }
-
-    public DbParameter CreateParameter(string name, object? value)
+    protected override DbParameter CreateParameter(string name, object? value)
     {
         return new NpgsqlParameter(name, value ?? DBNull.Value);
     }
 
-    public DbDataAdapter CreateDataAdapter(DbCommand command)
+    protected override DbDataAdapter CreateDataAdapter(DbCommand command)
     {
         return new NpgsqlDataAdapter((NpgsqlCommand)command);
     }

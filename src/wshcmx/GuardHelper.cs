@@ -31,4 +31,12 @@ internal static class GuardHelper
         }
 #endif
     }
+
+    public static void ThrowIfWhiteSpace(string value, string paramName)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new ArgumentException("The value cannot be an empty string or composed entirely of whitespace.", paramName);
+        }
+    }
 }

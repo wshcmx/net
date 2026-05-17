@@ -1,18 +1,17 @@
 using System.Data;
 using System.Text.Json;
 using System.Linq.Dynamic.Core;
+using wshcmx.Net.Providers;
 
 namespace wshcmx.Net;
 
 public class Sql
 {
-    private string? _connectionString;
     private IDatabaseProvider? _provider;
 
     public void Init(string connectionString, DatabaseType databaseType = DatabaseType.SqlServer)
     {
-        _connectionString = connectionString;
-        _provider = DatabaseProviderFactory.CreateProvider(databaseType);
+        _provider = DatabaseProviderFactory.CreateProvider(connectionString, databaseType);
     }
 
     public void Init(string connectionString, int databaseTypeNumber)
@@ -22,172 +21,21 @@ public class Sql
 
     public KeyValuePair<string, object?>[][] ExecuteQuery(string commandText)
     {
-        var provider = GuardHelper.GetRequired(_provider, nameof(_provider));
-        var connectionString = GuardHelper.GetRequired(_connectionString, nameof(_connectionString));
-
-        using var connection = provider.CreateConnection(connectionString);
-        using var command = provider.CreateCommand(commandText, connection);
-        connection.Open();
-
-        using var reader = command.ExecuteReader();
-        List<List<KeyValuePair<string, object?>>> rows = new();
-
-        while (reader.Read())
-        {
-            List<KeyValuePair<string, object?>> row = new(reader.FieldCount);
-
-            for (int i = 0; i < reader.FieldCount; i++)
-            {
-                row.Add(new(reader.GetName(i), reader.IsDBNull(i) ? null : reader.GetValue(i)));
-            }
-
-            rows.Add(row);
-        }
-
-        return rows.Select(r => r.ToArray()).ToArray();
+        return GuardHelper.GetRequired(_provider, nameof(_provider)).ExecuteQuery(commandText);
     }
 
     public void ExecuteNonQuery(string commandText)
     {
-        var provider = GuardHelper.GetRequired(_provider, nameof(_provider));
-        var connectionString = GuardHelper.GetRequired(_connectionString, nameof(_connectionString));
-
-        using var connection = provider.CreateConnection(connectionString);
-        using var command = provider.CreateCommand(commandText, connection);
-        connection.Open();
-        command.ExecuteNonQuery();
-    }
-
-    public object[] ExecutePaginationProcedure(string procedureName, string serializedOptions, string serializedParameters)
-    {
-        var provider = GuardHelper.GetRequired(_provider, nameof(_provider));
-        var connectionString = GuardHelper.GetRequired(_connectionString, nameof(_connectionString));
-
-        GuardHelper.ThrowIfNull(serializedParameters, nameof(serializedParameters));
-        GuardHelper.ThrowIfNull(_provider, nameof(_provider));
-
-        Dictionary<string, object>? options = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedOptions);
-        _ = int.TryParse(GuardHelper.GetDictionaryValue(options, "page")?.ToString(), out int page);
-
-        if (page < 1)
-        {
-            page = 1;
-        }
-
-        _ = int.TryParse(GuardHelper.GetDictionaryValue(options, "size")?.ToString(), out int size);
-
-        if (size < 1 || size > 400)
-        {
-            size = 400;
-        }
-
-        string select = GuardHelper.GetDictionaryValue(options, "select")?.ToString() ?? string.Empty;
-        string orderby = GuardHelper.GetDictionaryValue(options, "orderby")?.ToString() ?? string.Empty;
-
-        Dictionary<string, object>? parameters = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedParameters);
-
-        using var connection = provider.CreateConnection(connectionString);
-        using var command = provider.CreateCommand(procedureName, connection);
-        command.CommandType = CommandType.StoredProcedure;
-
-        if (parameters is not null)
-        {
-            foreach (var param in parameters)
-            {
-                var dbParam = provider.CreateParameter(param.Key,
-                    param.Value is null ? DBNull.Value : param.Value.ToString());
-                command.Parameters.Add(dbParam);
-            }
-        }
-
-        connection.Open();
-        using var adapter = provider.CreateDataAdapter(command);
-        DataSet ds = new();
-        adapter.Fill(ds);
-        var intermediateResult = ds.Tables[0].Rows.Cast<DataRow>().AsQueryable();
-
-        if (!string.IsNullOrEmpty(orderby))
-        {
-            intermediateResult = intermediateResult.OrderBy(orderby);
-        }
-
-        List<string> columns = new();
-
-        if (!string.IsNullOrEmpty(select))
-        {
-            select.Split(',')
-                .Select(s => s.Trim())
-                .ToList()
-                .ForEach(c => columns.Add(c));
-        }
-
-        bool hasSelect = columns.Count > 0;
-
-        intermediateResult = intermediateResult.Skip((page - 1) * size).Take(size);
-
-        List<List<KeyValuePair<string, object?>>> rows = new(capacity: size);
-
-        foreach (DataRow row in intermediateResult)
-        {
-            List<KeyValuePair<string, object?>> rowList = new(ds.Tables[0].Columns.Count);
-
-            foreach (DataColumn column in ds.Tables[0].Columns)
-            {
-                if (hasSelect && !columns.Contains(column.ColumnName))
-                {
-                    continue;
-                }
-
-                rowList.Add(new(column.ColumnName, row[column] == DBNull.Value ? null : row[column]));
-            }
-
-            rows.Add(rowList);
-        }
-
-        _ = int.TryParse(ds.Tables[1].Rows[0][0].ToString(), out int total);
-        return new object[] { total, rows.Select(r => r.ToArray()).ToArray() };
+        GuardHelper.GetRequired(_provider, nameof(_provider)).ExecuteNonQuery(commandText);
     }
 
     public object[] ExecuteProcedure(string procedureName, string? serializedParameters)
     {
-        var provider = GuardHelper.GetRequired(_provider, nameof(_provider));
-        var connectionString = GuardHelper.GetRequired(_connectionString, nameof(_connectionString));
+        return GuardHelper.GetRequired(_provider, nameof(_provider)).ExecuteProcedure(procedureName, serializedParameters);
+    }
 
-        using var connection = provider.CreateConnection(connectionString);
-        using var command = provider.CreateCommand(procedureName, connection);
-        command.CommandType = CommandType.StoredProcedure;
-
-        if (serializedParameters is not null)
-        {
-            Dictionary<string, object>? parameters = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedParameters);
-
-            if (parameters is not null)
-            {
-                foreach (var param in parameters)
-                {
-                    command.Parameters.Add(provider.CreateParameter(param.Key, param.Value is null ? DBNull.Value : param.Value.ToString()));
-                }
-            }
-        }
-
-        connection.Open();
-        using var adapter = provider.CreateDataAdapter(command);
-        DataSet ds = new();
-        adapter.Fill(ds);
-        List<List<KeyValuePair<string, object?>>> rows = new();
-
-        foreach (DataRow row in ds.Tables[0].Rows)
-        {
-            List<KeyValuePair<string, object?>> rowList = new(ds.Tables[0].Columns.Count);
-
-            foreach (DataColumn column in ds.Tables[0].Columns)
-            {
-                rowList.Add(new(column.ColumnName, row[column] == DBNull.Value ? null : row[column]));
-            }
-
-            rows.Add(rowList);
-        }
-
-        return rows.Select(r => r.ToArray()).ToArray();
+    public object[] ExecutePaginationProcedure(string procedureName, string serializedOptions, string serializedParameters)
+    {
+        return GuardHelper.GetRequired(_provider, nameof(_provider)).ExecutePaginationProcedure(procedureName, serializedOptions, serializedParameters);
     }
 }
