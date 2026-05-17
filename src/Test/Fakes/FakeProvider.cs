@@ -8,7 +8,19 @@ internal sealed class FakeProvider(string connectionString = "fake") : DatabaseP
 {
     public DataTable? ReaderResult { get; set; }
     public DataSet? AdapterResult { get; set; }
+    public bool OpenShouldThrow { get; set; }
     public List<FakeDbCommand> Commands { get; } = [];
+    public List<FakeDbConnection> CreatedConnections { get; } = [];
+
+    protected override FakeDbConnection CreateConnection()
+    {
+        var connection = new FakeDbConnection
+        {
+            OpenShouldThrow = OpenShouldThrow
+        };
+        CreatedConnections.Add(connection);
+        return connection;
+    }
 
     protected override DbCommand CreateTypedCommand(string commandText, FakeDbConnection connection)
     {

@@ -185,7 +185,7 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
         return new object[] { total, rows.Select(r => r.ToArray()).ToArray() };
     }
 
-    private static T CreateConnection()
+    protected virtual T CreateConnection()
     {
         return new T();
     }

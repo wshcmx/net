@@ -7,35 +7,7 @@ namespace Test.Fakes;
 
 internal sealed class FakeDbConnection : DbConnection
 {
-    private static readonly AsyncLocal<List<FakeDbConnection>?> _instances = new();
-    private static readonly AsyncLocal<bool> _openShouldThrow = new();
-
-    public static List<FakeDbConnection> Instances
-    {
-        get
-        {
-            _instances.Value ??= [];
-            return _instances.Value;
-        }
-    }
-
-    public static bool OpenShouldThrow
-    {
-        get => _openShouldThrow.Value;
-        set => _openShouldThrow.Value = value;
-    }
-
-    public static void Reset()
-    {
-        _instances.Value = null;
-        _openShouldThrow.Value = false;
-    }
-
-    public FakeDbConnection()
-    {
-        Instances.Add(this);
-    }
-
+    public bool OpenShouldThrow { get; set; }
     public bool WasDisposed { get; private set; }
     public bool WasOpened { get; private set; }
 
@@ -51,7 +23,9 @@ internal sealed class FakeDbConnection : DbConnection
     public override void Open()
     {
         if (OpenShouldThrow)
+        {
             throw new InvalidOperationException("Simulated Open failure");
+        }
         WasOpened = true;
         _state = ConnectionState.Open;
     }

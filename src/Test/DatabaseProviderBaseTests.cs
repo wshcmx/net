@@ -4,11 +4,8 @@ using Test.Fakes;
 
 namespace Test;
 
-public class DatabaseProviderBaseTests : IDisposable
+public class DatabaseProviderBaseTests
 {
-    public DatabaseProviderBaseTests() => FakeDbConnection.Reset();
-    public void Dispose() => FakeDbConnection.Reset();
-
     private static DataTable BuildTable(string[] columns, params object?[][] rows)
     {
         var table = new DataTable();
@@ -274,7 +271,7 @@ public class DatabaseProviderBaseTests : IDisposable
 
         Assert.ThrowsAny<Exception>(() => provider.ExecuteProcedure("sp", "not-json"));
 
-        Assert.Empty(FakeDbConnection.Instances);
+        Assert.Empty(provider.CreatedConnections);
     }
 
     [Fact]
@@ -303,12 +300,11 @@ public class DatabaseProviderBaseTests : IDisposable
     [Fact]
     public void Connection_WhenOpenThrows_IsDisposed()
     {
-        FakeDbConnection.OpenShouldThrow = true;
-        var provider = new FakeProvider();
+        var provider = new FakeProvider { OpenShouldThrow = true };
 
         Assert.Throws<InvalidOperationException>(() => provider.ExecuteNonQuery("noop"));
 
-        var conn = Assert.Single(FakeDbConnection.Instances);
+        var conn = Assert.Single(provider.CreatedConnections);
         Assert.True(conn.WasDisposed);
         Assert.False(conn.WasOpened);
     }
@@ -320,7 +316,7 @@ public class DatabaseProviderBaseTests : IDisposable
 
         provider.ExecuteNonQuery("noop");
 
-        var conn = Assert.Single(FakeDbConnection.Instances);
+        var conn = Assert.Single(provider.CreatedConnections);
         Assert.True(conn.WasOpened);
         Assert.True(conn.WasDisposed);
     }
