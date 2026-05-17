@@ -82,7 +82,7 @@ ProcessExecutor.Execute(command, arguments?, workingDirectory?, timeoutMilliseco
 | Проект | Описание |
 |---|---|
 | `src/wshcmx` | Основная библиотека |
-| `src/Typifier` | CLI-утилита для генерации TypeScript-типов в `src\Typifier\types\index.d.ts` |
+| `src/Typifier` | CLI-утилита для генерации TypeScript-типов в `src/Typifier/types/index.d.ts` |
 | `src/Test` | Тесты |
 
 ## Сборка
@@ -101,7 +101,7 @@ dotnet test wshcmx.slnx --no-logo
 
 ```bash
 dotnet build wshcmx.slnx
-dotnet run --project src\Typifier\Typifier.csproj
+dotnet run --project src/Typifier/Typifier.csproj
 ```
 
-Сгенерированный файл сохраняется в `src\Typifier\types\index.d.ts`.
+Сгенерированный файл сохраняется в `src/Typifier/types/index.d.ts`.
