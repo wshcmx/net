@@ -199,7 +199,9 @@ public class DatabaseProviderBaseTests : IDisposable
         var provider = new FakeProvider { AdapterResult = ds };
         var options = JsonSerializer.Serialize(new Dictionary<string, object>
         {
-            ["page"] = 1, ["size"] = 10, ["orderby"] = "it[\"id\"]"
+            ["page"] = 1,
+            ["size"] = 10,
+            ["orderby"] = "it[\"id\"]"
         });
 
         var result = provider.ExecutePaginationProcedure("sp", options, "{}");
@@ -220,7 +222,9 @@ public class DatabaseProviderBaseTests : IDisposable
         var provider = new FakeProvider { AdapterResult = ds };
         var options = JsonSerializer.Serialize(new Dictionary<string, object>
         {
-            ["page"] = 1, ["size"] = 10, ["orderby"] = "it[\"id\"] desc"
+            ["page"] = 1,
+            ["size"] = 10,
+            ["orderby"] = "it[\"id\"] desc"
         });
 
         var result = provider.ExecutePaginationProcedure("sp", options, "{}");
