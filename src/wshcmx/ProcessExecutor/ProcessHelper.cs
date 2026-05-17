@@ -7,7 +7,7 @@ namespace wshcmx.Net;
 /// <summary>
 /// Provides helper methods for executing external processes.
 /// </summary>
-public static class ProcessHelper
+public static class ProcessExecutor
 {
     private const int PollIntervalMilliseconds = 50;
     private const int StreamDrainTimeoutMilliseconds = 500;
