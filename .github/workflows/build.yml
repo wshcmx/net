@@ -6,16 +6,21 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
-          - windows-latest
+  build-on-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v6
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 10.x
+    - name: Build
+      run: dotnet build wshcmx.slnx --configuration Release
+    - name: Test
+      run: dotnet test wshcmx.slnx --configuration Release --no-build --no-logo
 
-    runs-on: ${{ matrix.os }}
-
+  build-on-linux:
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
     - name: Setup .NET
@@ -27,4 +32,21 @@ jobs:
     - name: Build
       run: dotnet build wshcmx.slnx --configuration Release --no-restore
     - name: Test
-      run: dotnet test wshcmx.slnx --configuration Release --no-build --no-logo
+      if: github.event_name == 'pull_request'
+      run: dotnet test wshcmx.slnx --configuration Release --no-build --no-logo --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./TestResults
+    - name: Code Coverage Summary Report
+      uses: irongut/CodeCoverageSummary@v1.3.0
+      if: github.event_name == 'pull_request'
+      with:
+        filename: 'TestResults/**/*.xml'
+        badge: true
+        fail_below_min: false
+        format: markdown
+        output: both
+        thresholds: '50 75'
+    - name: Add Coverage PR Comment
+      uses: marocchino/sticky-pull-request-comment@v2
+      if: github.event_name == 'pull_request'
+      with:
+        recreate: true
+        path: code-coverage-results.md
