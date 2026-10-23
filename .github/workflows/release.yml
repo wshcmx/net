@@ -12,19 +12,37 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: cross-platform
+            os: ubuntu-latest
+            publish-args: ""
+          - platform: win-x64
+            os: windows-latest
+            publish-args: "--runtime win-x64 --self-contained false"
+          - platform: linux-x64
+            os: ubuntu-latest
+            publish-args: "--runtime linux-x64 --self-contained false"
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v6
-      - name: Publish portable library output
-        run: dotnet publish src/wshcmx -f netstandard2.0 -c Release -o ./publish
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.0.x"
+      - name: Publish library output
+        run: dotnet publish src/wshcmx -f netstandard2.0 -c Release -o ./publish ${{ matrix.publish-args }}
       - name: Create ZIP
-        run: cd ./publish && zip -r ../wshcmx-cross-platform.zip ./*
+        shell: pwsh
+        run: Compress-Archive -Path ./publish/* -DestinationPath ./wshcmx-${{ matrix.platform }}.zip
       - name: Upload Artifact
         uses: actions/upload-artifact@v6
         with:
-          name: wshcmx-cross-platform
-          path: wshcmx-cross-platform.zip
+          name: wshcmx-${{ matrix.platform }}
+          path: wshcmx-${{ matrix.platform }}.zip
+          if-no-files-found: error
 
   publish-npm:
     needs: build
@@ -77,4 +95,5 @@ jobs:
           tag_name: ${{ github.event.release.tag_name }}
           name: Release ${{ github.event.release.tag_name }}
           body: "Automated release for ${{ github.event.release.tag_name }}."
-          files: release/wshcmx-cross-platform.zip
+          files: release/wshcmx-*.zip
+          fail_on_unmatched_files: true
