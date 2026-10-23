@@ -52,6 +52,13 @@ Sql.ExecutePaginationProcedure(procedureName, serializedOptions, serializedParam
 - `SqlServer` — значение по умолчанию
 - `PostgreSql`
 
+Для SQL Server используется `Microsoft.Data.SqlClient` 7.1.1. Начиная с версии 7,
+аутентификация Microsoft Entra ID через параметр `Authentication` в строке
+подключения требует отдельного пакета
+[`Microsoft.Data.SqlClient.Extensions.Azure`](https://www.nuget.org/packages/Microsoft.Data.SqlClient.Extensions.Azure)
+в приложении, загружающем библиотеку. Для SQL-аутентификации и Windows Integrated
+Authentication этот пакет не требуется.
+
 ### Templater
 
 ```js
