@@ -1,7 +1,7 @@
 using System.Data.Common;
 using Microsoft.Data.SqlClient;
 
-namespace wshcmx.Net.Providers;
+namespace wshcmx.Net.Database.Providers;
 
 internal class SqlServerProvider(string connectionString) : DatabaseProviderBase<SqlConnection>(connectionString)
 {

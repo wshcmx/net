@@ -15,25 +15,19 @@ indent_size = 2
 indent_size = 2
 
 [*.cs]
-# Use 'var' when type is apparent
-csharp_style_var_for_built_in_types = true
-csharp_style_var_when_type_is_apparent = true
-csharp_style_var_elsewhere = true
-
-# Prefer file-scoped namespaces
-csharp_style_namespace_declarations = file_scoped
-
-# Expression-bodied members
-csharp_style_expression_bodied_methods = when_on_single_line
-csharp_style_expression_bodied_properties = true
-csharp_style_expression_bodied_lambdas = true
-
-# Formatting
 csharp_new_line_before_open_brace = all
-csharp_new_line_before_else = true
-csharp_new_line_before_catch = true
-csharp_new_line_before_finally = true
-dotnet_diagnostic.IDE0005.severity = error
 
-[src/wshcmx/**/*.cs]
-dotnet_diagnostic.IDE0130.severity = none
+dotnet_analyzer_diagnostic.severity = error
+dotnet_separate_import_directive_groups = true:error
+dotnet_sort_system_directives_first = true:error
+
+dotnet_diagnostic.IDE0005.severity = error
+dotnet_diagnostic.IDE0028.severity = none
+dotnet_diagnostic.IDE0046.severity = none
+dotnet_diagnostic.IDE0055.severity = error
+dotnet_diagnostic.IDE0160.severity = none
+dotnet_diagnostic.IDE0305.severity = none
+
+dotnet_diagnostic.CA1707.severity = none
+
+dotnet_diagnostic.SA1505.severity = error

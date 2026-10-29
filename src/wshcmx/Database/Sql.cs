@@ -1,6 +1,6 @@
-using wshcmx.Net.Providers;
+using wshcmx.Net.Database.Providers;
 
-namespace wshcmx.Net;
+namespace wshcmx.Net.Database;
 
 public class Sql
 {
