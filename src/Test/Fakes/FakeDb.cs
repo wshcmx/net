@@ -30,14 +30,22 @@ internal sealed class FakeDbConnection : DbConnection
         _state = ConnectionState.Open;
     }
 
-    public override void Close() => _state = ConnectionState.Closed;
+    public override void Close()
+    {
+        _state = ConnectionState.Closed;
+    }
 
     public override void ChangeDatabase(string databaseName) { }
 
-    protected override DbCommand CreateDbCommand() => new FakeDbCommand();
+    protected override DbCommand CreateDbCommand()
+    {
+        return new FakeDbCommand();
+    }
 
     protected override DbTransaction BeginDbTransaction(IsolationLevel isolationLevel)
-        => throw new NotSupportedException();
+    {
+        throw new NotSupportedException();
+    }
 
     protected override void Dispose(bool disposing)
     {
@@ -48,7 +56,7 @@ internal sealed class FakeDbConnection : DbConnection
 
 internal sealed class FakeDbCommand : DbCommand
 {
-    private readonly FakeDbParameterCollection _parameters = new();
+    private readonly FakeDbParameterCollection _parameters = [];
 
     public DataTable? ReaderResult { get; set; }
     public int NonQueryResult { get; set; }
@@ -73,13 +81,22 @@ internal sealed class FakeDbCommand : DbCommand
         return NonQueryResult;
     }
 
-    public override object? ExecuteScalar() => null;
+    public override object? ExecuteScalar()
+    {
+        return null;
+    }
+
     public override void Prepare() { }
 
-    protected override DbParameter CreateDbParameter() => new FakeDbParameter();
+    protected override DbParameter CreateDbParameter()
+    {
+        return new FakeDbParameter();
+    }
 
     protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
-        => (ReaderResult ?? new DataTable()).CreateDataReader();
+    {
+        return (ReaderResult ?? new DataTable()).CreateDataReader();
+    }
 }
 
 internal sealed class FakeDbParameter : DbParameter
@@ -105,24 +122,99 @@ internal sealed class FakeDbParameterCollection : DbParameterCollection
     public override int Count => _items.Count;
     public override object SyncRoot => ((ICollection)_items).SyncRoot;
 
-    public override int Add(object? value) { _items.Add((DbParameter)value!); return _items.Count - 1; }
-    public override void AddRange(Array values) { foreach (var v in values) _items.Add((DbParameter)v); }
-    public override void Clear() => _items.Clear();
-    public override bool Contains(object? value) => value is DbParameter p && _items.Contains(p);
-    public override bool Contains(string value) => _items.Exists(p => p.ParameterName == value);
-    public override void CopyTo(Array array, int index) => ((ICollection)_items).CopyTo(array, index);
-    public override IEnumerator GetEnumerator() => _items.GetEnumerator();
-    public override int IndexOf(object? value) => value is DbParameter p ? _items.IndexOf(p) : -1;
-    public override int IndexOf(string parameterName) => _items.FindIndex(p => p.ParameterName == parameterName);
-    public override void Insert(int index, object? value) => _items.Insert(index, (DbParameter)value!);
-    public override void Remove(object? value) { if (value is DbParameter p) _items.Remove(p); }
-    public override void RemoveAt(int index) => _items.RemoveAt(index);
-    public override void RemoveAt(string parameterName) { var i = IndexOf(parameterName); if (i >= 0) _items.RemoveAt(i); }
+    public override int Add(object? value)
+    {
+        _items.Add((DbParameter)value!); return _items.Count - 1;
+    }
 
-    protected override DbParameter GetParameter(int index) => _items[index];
-    protected override DbParameter GetParameter(string parameterName) => _items[IndexOf(parameterName)];
-    protected override void SetParameter(int index, DbParameter value) => _items[index] = value;
-    protected override void SetParameter(string parameterName, DbParameter value) => _items[IndexOf(parameterName)] = value;
+    public override void AddRange(Array values)
+    {
+        foreach (object? v in values)
+        {
+            _items.Add((DbParameter)v);
+        }
+    }
+
+    public override void Clear()
+    {
+        _items.Clear();
+    }
+
+    public override bool Contains(object? value)
+    {
+        return value is DbParameter p && _items.Contains(p);
+    }
+
+    public override bool Contains(string value)
+    {
+        return _items.Exists(p => p.ParameterName == value);
+    }
+
+    public override void CopyTo(Array array, int index)
+    {
+        ((ICollection)_items).CopyTo(array, index);
+    }
+
+    public override IEnumerator GetEnumerator()
+    {
+        return _items.GetEnumerator();
+    }
+
+    public override int IndexOf(object? value)
+    {
+        return value is DbParameter p ? _items.IndexOf(p) : -1;
+    }
+
+    public override int IndexOf(string parameterName)
+    {
+        return _items.FindIndex(p => p.ParameterName == parameterName);
+    }
+
+    public override void Insert(int index, object? value)
+    {
+        _items.Insert(index, (DbParameter)value!);
+    }
+
+    public override void Remove(object? value)
+    {
+        if (value is DbParameter p)
+        {
+            _ = _items.Remove(p);
+        }
+    }
+
+    public override void RemoveAt(int index)
+    {
+        _items.RemoveAt(index);
+    }
+
+    public override void RemoveAt(string parameterName)
+    {
+        int i = IndexOf(parameterName); if (i >= 0)
+        {
+            _items.RemoveAt(i);
+        }
+    }
+
+    protected override DbParameter GetParameter(int index)
+    {
+        return _items[index];
+    }
+
+    protected override DbParameter GetParameter(string parameterName)
+    {
+        return _items[IndexOf(parameterName)];
+    }
+
+    protected override void SetParameter(int index, DbParameter value)
+    {
+        _items[index] = value;
+    }
+
+    protected override void SetParameter(string parameterName, DbParameter value)
+    {
+        _items[IndexOf(parameterName)] = value;
+    }
 }
 
 internal sealed class FakeDbDataAdapter : DbDataAdapter
@@ -131,8 +223,16 @@ internal sealed class FakeDbDataAdapter : DbDataAdapter
 
     public override int Fill(DataSet dataSet)
     {
-        if (FillResult is null) return 0;
-        foreach (DataTable t in FillResult.Tables) dataSet.Tables.Add(t.Copy());
+        if (FillResult is null)
+        {
+            return 0;
+        }
+
+        foreach (DataTable t in FillResult.Tables)
+        {
+            dataSet.Tables.Add(t.Copy());
+        }
+
         return FillResult.Tables.Count > 0 ? FillResult.Tables[0].Rows.Count : 0;
     }
 }

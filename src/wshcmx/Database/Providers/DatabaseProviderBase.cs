@@ -1,35 +1,30 @@
 using System.Data;
 using System.Data.Common;
-using System.Text.Json;
 using System.Linq.Dynamic.Core;
+using System.Text.Json;
 
-namespace wshcmx.Net.Providers;
+namespace wshcmx.Net.Database.Providers;
 
-internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : DbConnection, new()
+internal abstract class DatabaseProviderBase<T>(string connectionString) : IDatabaseProvider where T : DbConnection, new()
 {
-    private readonly string _connectionString;
-
-    protected DatabaseProviderBase(string connectionString)
-    {
-        _connectionString = connectionString;
-    }
+    private readonly string _connectionString = connectionString;
 
     public KeyValuePair<string, object?>[][] ExecuteQuery(string commandText)
     {
         GuardHelper.ThrowIfNull(commandText, nameof(commandText));
         GuardHelper.ThrowIfWhiteSpace(commandText, nameof(commandText));
 
-        using var connection = CreateConnection();
+        using T connection = CreateConnection();
         connection.ConnectionString = _connectionString;
         connection.Open();
-        using var command = CreateTypedCommand(commandText, connection);
-        using var reader = command.ExecuteReader();
+        using DbCommand command = CreateTypedCommand(commandText, connection);
+        using DbDataReader reader = command.ExecuteReader();
 
-        var rows = new List<List<KeyValuePair<string, object?>>>();
+        List<List<KeyValuePair<string, object?>>> rows = [];
 
         while (reader.Read())
         {
-            var row = new List<KeyValuePair<string, object?>>(reader.FieldCount);
+            List<KeyValuePair<string, object?>> row = new(reader.FieldCount);
 
             for (int i = 0; i < reader.FieldCount; i++)
             {
@@ -47,11 +42,11 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
         GuardHelper.ThrowIfNull(commandText, nameof(commandText));
         GuardHelper.ThrowIfWhiteSpace(commandText, nameof(commandText));
 
-        using var connection = CreateConnection();
+        using T connection = CreateConnection();
         connection.ConnectionString = _connectionString;
         connection.Open();
-        using var command = CreateTypedCommand(commandText, connection);
-        command.ExecuteNonQuery();
+        using DbCommand command = CreateTypedCommand(commandText, connection);
+        _ = command.ExecuteNonQuery();
     }
 
     public object[] ExecuteProcedure(string procedureName, string? serializedParameters)
@@ -65,34 +60,34 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
             parameters = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedParameters);
         }
 
-        using var connection = CreateConnection();
+        using T connection = CreateConnection();
         connection.ConnectionString = _connectionString;
         connection.Open();
-        using var command = CreateTypedCommand(procedureName, connection);
+        using DbCommand command = CreateTypedCommand(procedureName, connection);
         command.CommandType = CommandType.StoredProcedure;
 
         if (parameters is not null)
         {
-            foreach (var param in parameters)
+            foreach (KeyValuePair<string, object> param in parameters)
             {
-                command.Parameters.Add(CreateParameter(param.Key, param.Value?.ToString()));
+                _ = command.Parameters.Add(CreateParameter(param.Key, param.Value?.ToString()));
             }
         }
 
-        using var adapter = CreateDataAdapter(command);
-        var ds = new DataSet();
-        adapter.Fill(ds);
+        using DbDataAdapter adapter = CreateDataAdapter(command);
+        DataSet ds = new();
+        _ = adapter.Fill(ds);
 
         if (ds.Tables.Count < 1)
         {
             throw new InvalidOperationException($"Stored procedure '{procedureName}' returned no result sets.");
         }
 
-        var rows = new List<List<KeyValuePair<string, object?>>>();
+        List<List<KeyValuePair<string, object?>>> rows = [];
 
         foreach (DataRow row in ds.Tables[0].Rows)
         {
-            var rowList = new List<KeyValuePair<string, object?>>(ds.Tables[0].Columns.Count);
+            List<KeyValuePair<string, object?>> rowList = new(ds.Tables[0].Columns.Count);
 
             foreach (DataColumn column in ds.Tables[0].Columns)
             {
@@ -111,7 +106,7 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
         GuardHelper.ThrowIfWhiteSpace(procedureName, nameof(procedureName));
         GuardHelper.ThrowIfNull(serializedOptions, nameof(serializedOptions));
         GuardHelper.ThrowIfNull(serializedParameters, nameof(serializedParameters));
-        var options = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedOptions);
+        Dictionary<string, object>? options = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedOptions);
 
         _ = int.TryParse(GuardHelper.GetDictionaryValue(options, "page")?.ToString(), out int page);
         if (page < 1)
@@ -120,7 +115,8 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
         }
 
         _ = int.TryParse(GuardHelper.GetDictionaryValue(options, "size")?.ToString(), out int size);
-        if (size < 1 || size > 400)
+
+        if (size is < 1 or > 400)
         {
             size = 400;
         }
@@ -128,50 +124,50 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
         string select = GuardHelper.GetDictionaryValue(options, "select")?.ToString() ?? string.Empty;
         string orderby = GuardHelper.GetDictionaryValue(options, "orderby")?.ToString() ?? string.Empty;
 
-        var parameters = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedParameters);
+        Dictionary<string, object>? parameters = JsonSerializer.Deserialize<Dictionary<string, object>>(serializedParameters);
 
-        using var connection = CreateConnection();
+        using T connection = CreateConnection();
         connection.ConnectionString = _connectionString;
         connection.Open();
-        using var command = CreateTypedCommand(procedureName, connection);
+        using DbCommand command = CreateTypedCommand(procedureName, connection);
         command.CommandType = CommandType.StoredProcedure;
 
         if (parameters is not null)
         {
-            foreach (var param in parameters)
+            foreach (KeyValuePair<string, object> param in parameters)
             {
-                command.Parameters.Add(CreateParameter(param.Key, param.Value?.ToString()));
+                _ = command.Parameters.Add(CreateParameter(param.Key, param.Value?.ToString()));
             }
         }
 
-        using var adapter = CreateDataAdapter(command);
-        var ds = new DataSet();
-        adapter.Fill(ds);
+        using DbDataAdapter adapter = CreateDataAdapter(command);
+        DataSet ds = new();
+        _ = adapter.Fill(ds);
 
         if (ds.Tables.Count < 2 || ds.Tables[1].Rows.Count == 0 || ds.Tables[1].Columns.Count == 0)
         {
             throw new InvalidOperationException($"Stored procedure '{procedureName}' must return two result sets; the second must contain the total row count.");
         }
 
-        var intermediateResult = ds.Tables[0].Rows.Cast<DataRow>().AsQueryable();
+        IQueryable<DataRow> intermediateResult = ds.Tables[0].Rows.Cast<DataRow>().AsQueryable();
 
         if (!string.IsNullOrEmpty(orderby))
         {
             intermediateResult = intermediateResult.OrderBy(orderby);
         }
 
-        var columns = string.IsNullOrEmpty(select)
-            ? new List<string>()
+        List<string> columns = string.IsNullOrEmpty(select)
+            ? []
             : select.Split(',').Select(s => s.Trim()).ToList();
 
         bool hasSelect = columns.Count > 0;
         intermediateResult = intermediateResult.Skip((page - 1) * size).Take(size);
 
-        var rows = new List<List<KeyValuePair<string, object?>>>(capacity: size);
+        List<List<KeyValuePair<string, object?>>> rows = new(capacity: size);
 
         foreach (DataRow row in intermediateResult)
         {
-            var rowList = new List<KeyValuePair<string, object?>>(ds.Tables[0].Columns.Count);
+            List<KeyValuePair<string, object?>> rowList = new(ds.Tables[0].Columns.Count);
 
             foreach (DataColumn column in ds.Tables[0].Columns)
             {
@@ -186,7 +182,7 @@ internal abstract class DatabaseProviderBase<T> : IDatabaseProvider where T : Db
         }
 
         _ = int.TryParse(ds.Tables[1].Rows[0][0].ToString(), out int total);
-        return new object[] { total, rows.Select(r => r.ToArray()).ToArray() };
+        return [total, rows.Select(r => r.ToArray()).ToArray()];
     }
 
     protected virtual T CreateConnection()

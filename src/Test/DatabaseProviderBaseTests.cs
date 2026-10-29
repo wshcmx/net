@@ -8,21 +8,30 @@ public class DatabaseProviderBaseTests
 {
     private static DataTable BuildTable(string[] columns, params object?[][] rows)
     {
-        var table = new DataTable();
-        foreach (var c in columns) table.Columns.Add(c, typeof(object));
-        foreach (var r in rows) table.Rows.Add(r);
+        DataTable table = new();
+
+        foreach (string c in columns)
+        {
+            _ = table.Columns.Add(c, typeof(object));
+        }
+
+        foreach (object?[] r in rows)
+        {
+            _ = table.Rows.Add(r);
+        }
+
         return table;
     }
 
     [Fact]
     public void ExecuteQuery_ReturnsRowsAndMapsDbNullToNull()
     {
-        var provider = new FakeProvider
+        FakeProvider provider = new()
         {
             ReaderResult = BuildTable(["id", "name"], [1, "alice"], [2, DBNull.Value])
         };
 
-        var result = provider.ExecuteQuery("SELECT * FROM t");
+        KeyValuePair<string, object?>[][] result = provider.ExecuteQuery("SELECT * FROM t");
 
         Assert.Equal(2, result.Length);
         Assert.Equal("id", result[0][0].Key);
@@ -34,9 +43,9 @@ public class DatabaseProviderBaseTests
     [Fact]
     public void ExecuteQuery_EmptyReader_ReturnsEmptyArray()
     {
-        var provider = new FakeProvider { ReaderResult = BuildTable(["id"]) };
+        FakeProvider provider = new() { ReaderResult = BuildTable(["id"]) };
 
-        var result = provider.ExecuteQuery("SELECT * FROM t");
+        KeyValuePair<string, object?>[][] result = provider.ExecuteQuery("SELECT * FROM t");
 
         Assert.Empty(result);
     }
@@ -44,11 +53,11 @@ public class DatabaseProviderBaseTests
     [Fact]
     public void ExecuteNonQuery_InvokesCommandExecuteNonQuery()
     {
-        var provider = new FakeProvider();
+        FakeProvider provider = new();
 
         provider.ExecuteNonQuery("DELETE FROM t");
 
-        var cmd = Assert.Single(provider.Commands);
+        FakeDbCommand cmd = Assert.Single(provider.Commands);
         Assert.Equal("DELETE FROM t", cmd.CommandText);
         Assert.Equal(1, cmd.ExecuteNonQueryCallCount);
     }
@@ -56,29 +65,29 @@ public class DatabaseProviderBaseTests
     [Fact]
     public void ExecuteProcedure_NullParameters_DoesNotAddParameters()
     {
-        var ds = new DataSet();
+        DataSet ds = new();
         ds.Tables.Add(BuildTable(["id"], [42]));
-        var provider = new FakeProvider { AdapterResult = ds };
+        FakeProvider provider = new() { AdapterResult = ds };
 
-        var result = provider.ExecuteProcedure("sp_test", null);
+        object[] result = provider.ExecuteProcedure("sp_test", null);
 
-        var cmd = Assert.Single(provider.Commands);
+        FakeDbCommand cmd = Assert.Single(provider.Commands);
         Assert.Equal(CommandType.StoredProcedure, cmd.CommandType);
         Assert.Empty(cmd.Parameters);
-        Assert.Single(result);
+        _ = Assert.Single(result);
     }
 
     [Fact]
     public void ExecuteProcedure_WithParameters_AddsThemToCommand()
     {
-        var ds = new DataSet();
+        DataSet ds = new();
         ds.Tables.Add(BuildTable(["id"]));
-        var provider = new FakeProvider { AdapterResult = ds };
-        var json = JsonSerializer.Serialize(new Dictionary<string, object> { ["name"] = "bob", ["age"] = 30 });
+        FakeProvider provider = new() { AdapterResult = ds };
+        string json = JsonSerializer.Serialize(new Dictionary<string, object> { ["name"] = "bob", ["age"] = 30 });
 
-        provider.ExecuteProcedure("sp_test", json);
+        _ = provider.ExecuteProcedure("sp_test", json);
 
-        var cmd = Assert.Single(provider.Commands);
+        FakeDbCommand cmd = Assert.Single(provider.Commands);
         Assert.Equal(2, cmd.Parameters.Count);
         Assert.Equal("name", cmd.Parameters[0].ParameterName);
         Assert.Equal("bob", cmd.Parameters[0].Value);
@@ -89,38 +98,38 @@ public class DatabaseProviderBaseTests
     [Fact]
     public void ExecuteProcedure_NoTables_ThrowsInvalidOperationException()
     {
-        var provider = new FakeProvider { AdapterResult = new DataSet() };
+        FakeProvider provider = new() { AdapterResult = new DataSet() };
 
-        var ex = Assert.Throws<InvalidOperationException>(() => provider.ExecuteProcedure("sp_test", null));
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => provider.ExecuteProcedure("sp_test", null));
         Assert.Contains("sp_test", ex.Message);
     }
 
     [Fact]
     public void ExecutePaginationProcedure_NullSerializedOptions_ThrowsWithCorrectParamName()
     {
-        var provider = new FakeProvider();
+        FakeProvider provider = new();
 
-        var ex = Assert.Throws<ArgumentNullException>(() => provider.ExecutePaginationProcedure("sp", null!, "{}"));
+        ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => provider.ExecutePaginationProcedure("sp", null!, "{}"));
         Assert.Equal("serializedOptions", ex.ParamName);
     }
 
     [Fact]
     public void ExecutePaginationProcedure_NullSerializedParameters_ThrowsWithCorrectParamName()
     {
-        var provider = new FakeProvider();
-        var options = JsonSerializer.Serialize(new Dictionary<string, object> { ["page"] = 1, ["size"] = 10 });
+        FakeProvider provider = new();
+        string options = JsonSerializer.Serialize(new Dictionary<string, object> { ["page"] = 1, ["size"] = 10 });
 
-        var ex = Assert.Throws<ArgumentNullException>(() => provider.ExecutePaginationProcedure("sp", options, null!));
+        ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => provider.ExecutePaginationProcedure("sp", options, null!));
         Assert.Equal("serializedParameters", ex.ParamName);
     }
 
     [Fact]
     public void ExecutePaginationProcedure_NoTables_ThrowsInvalidOperationException()
     {
-        var provider = new FakeProvider { AdapterResult = new DataSet() };
-        var options = JsonSerializer.Serialize(new Dictionary<string, object> { ["page"] = 1, ["size"] = 10 });
+        FakeProvider provider = new() { AdapterResult = new DataSet() };
+        string options = JsonSerializer.Serialize(new Dictionary<string, object> { ["page"] = 1, ["size"] = 10 });
 
-        var ex = Assert.Throws<InvalidOperationException>(() =>
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() =>
             provider.ExecutePaginationProcedure("sp_pag", options, "{}"));
         Assert.Contains("sp_pag", ex.Message);
     }
@@ -128,12 +137,12 @@ public class DatabaseProviderBaseTests
     [Fact]
     public void ExecutePaginationProcedure_OnlyOneTable_ThrowsInvalidOperationException()
     {
-        var ds = new DataSet();
+        DataSet ds = new();
         ds.Tables.Add(BuildTable(["id"], [1], [2]));
-        var provider = new FakeProvider { AdapterResult = ds };
-        var options = JsonSerializer.Serialize(new Dictionary<string, object> { ["page"] = 1, ["size"] = 10 });
+        FakeProvider provider = new() { AdapterResult = ds };
+        string options = JsonSerializer.Serialize(new Dictionary<string, object> { ["page"] = 1, ["size"] = 10 });
 
-        var ex = Assert.Throws<InvalidOperationException>(() =>
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() =>
             provider.ExecutePaginationProcedure("sp_pag", options, "{}"));
         Assert.Contains("two result sets", ex.Message);
     }
@@ -141,13 +150,13 @@ public class DatabaseProviderBaseTests
     [Fact]
     public void ExecutePaginationProcedure_SecondTableWithoutTotal_ThrowsInvalidOperationException()
     {
-        var ds = new DataSet();
+        DataSet ds = new();
         ds.Tables.Add(BuildTable(["id"], [1], [2]));
         ds.Tables.Add(BuildTable(["total"]));
-        var provider = new FakeProvider { AdapterResult = ds };
-        var options = JsonSerializer.Serialize(new Dictionary<string, object> { ["page"] = 1, ["size"] = 10 });
+        FakeProvider provider = new() { AdapterResult = ds };
+        string options = JsonSerializer.Serialize(new Dictionary<string, object> { ["page"] = 1, ["size"] = 10 });
 
-        var ex = Assert.Throws<InvalidOperationException>(() =>
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() =>
             provider.ExecutePaginationProcedure("sp_pag", options, "{}"));
         Assert.Contains("total row count", ex.Message);
     }
@@ -155,33 +164,33 @@ public class DatabaseProviderBaseTests
     [Fact]
     public void ExecutePaginationProcedure_ReturnsTotalAndPagedRows()
     {
-        var ds = new DataSet();
+        DataSet ds = new();
         ds.Tables.Add(BuildTable(["id", "name"], [1, "a"], [2, "b"], [3, "c"]));
-        var totals = BuildTable(["total"], [42]);
+        DataTable totals = BuildTable(["total"], [42]);
         ds.Tables.Add(totals);
-        var provider = new FakeProvider { AdapterResult = ds };
-        var options = JsonSerializer.Serialize(new Dictionary<string, object> { ["page"] = 1, ["size"] = 10 });
+        FakeProvider provider = new() { AdapterResult = ds };
+        string options = JsonSerializer.Serialize(new Dictionary<string, object> { ["page"] = 1, ["size"] = 10 });
 
-        var result = provider.ExecutePaginationProcedure("sp", options, "{}");
+        object[] result = provider.ExecutePaginationProcedure("sp", options, "{}");
 
         Assert.Equal(2, result.Length);
         Assert.Equal(42, result[0]);
-        var rows = Assert.IsType<KeyValuePair<string, object?>[][]>(result[1]);
+        KeyValuePair<string, object?>[][] rows = Assert.IsType<KeyValuePair<string, object?>[][]>(result[1]);
         Assert.Equal(3, rows.Length);
     }
 
     [Fact]
     public void ExecutePaginationProcedure_AppliesPagination()
     {
-        var ds = new DataSet();
+        DataSet ds = new();
         ds.Tables.Add(BuildTable(["id"], [1], [2], [3], [4], [5]));
         ds.Tables.Add(BuildTable(["total"], [5]));
-        var provider = new FakeProvider { AdapterResult = ds };
-        var options = JsonSerializer.Serialize(new Dictionary<string, object> { ["page"] = 2, ["size"] = 2, ["orderby"] = "it[\"id\"]" });
+        FakeProvider provider = new() { AdapterResult = ds };
+        string options = JsonSerializer.Serialize(new Dictionary<string, object> { ["page"] = 2, ["size"] = 2, ["orderby"] = "it[\"id\"]" });
 
-        var result = provider.ExecutePaginationProcedure("sp", options, "{}");
+        object[] result = provider.ExecutePaginationProcedure("sp", options, "{}");
 
-        var rows = Assert.IsType<KeyValuePair<string, object?>[][]>(result[1]);
+        KeyValuePair<string, object?>[][] rows = Assert.IsType<KeyValuePair<string, object?>[][]>(result[1]);
         Assert.Equal(2, rows.Length);
         Assert.Equal(3, rows[0][0].Value);
         Assert.Equal(4, rows[1][0].Value);
@@ -190,20 +199,20 @@ public class DatabaseProviderBaseTests
     [Fact]
     public void ExecutePaginationProcedure_AppliesOrderbyAscending()
     {
-        var ds = new DataSet();
+        DataSet ds = new();
         ds.Tables.Add(BuildTable(["id"], [3], [1], [2]));
         ds.Tables.Add(BuildTable(["total"], [3]));
-        var provider = new FakeProvider { AdapterResult = ds };
-        var options = JsonSerializer.Serialize(new Dictionary<string, object>
+        FakeProvider provider = new() { AdapterResult = ds };
+        string options = JsonSerializer.Serialize(new Dictionary<string, object>
         {
             ["page"] = 1,
             ["size"] = 10,
             ["orderby"] = "it[\"id\"]"
         });
 
-        var result = provider.ExecutePaginationProcedure("sp", options, "{}");
+        object[] result = provider.ExecutePaginationProcedure("sp", options, "{}");
 
-        var rows = Assert.IsType<KeyValuePair<string, object?>[][]>(result[1]);
+        KeyValuePair<string, object?>[][] rows = Assert.IsType<KeyValuePair<string, object?>[][]>(result[1]);
         Assert.Equal(3, rows.Length);
         Assert.Equal(1, rows[0][0].Value);
         Assert.Equal(2, rows[1][0].Value);
@@ -213,20 +222,20 @@ public class DatabaseProviderBaseTests
     [Fact]
     public void ExecutePaginationProcedure_AppliesOrderbyDescending()
     {
-        var ds = new DataSet();
+        DataSet ds = new();
         ds.Tables.Add(BuildTable(["id"], [1], [3], [2]));
         ds.Tables.Add(BuildTable(["total"], [3]));
-        var provider = new FakeProvider { AdapterResult = ds };
-        var options = JsonSerializer.Serialize(new Dictionary<string, object>
+        FakeProvider provider = new() { AdapterResult = ds };
+        string options = JsonSerializer.Serialize(new Dictionary<string, object>
         {
             ["page"] = 1,
             ["size"] = 10,
             ["orderby"] = "it[\"id\"] desc"
         });
 
-        var result = provider.ExecutePaginationProcedure("sp", options, "{}");
+        object[] result = provider.ExecutePaginationProcedure("sp", options, "{}");
 
-        var rows = Assert.IsType<KeyValuePair<string, object?>[][]>(result[1]);
+        KeyValuePair<string, object?>[][] rows = Assert.IsType<KeyValuePair<string, object?>[][]>(result[1]);
         Assert.Equal(3, rows[0][0].Value);
         Assert.Equal(2, rows[1][0].Value);
         Assert.Equal(1, rows[2][0].Value);
@@ -235,8 +244,8 @@ public class DatabaseProviderBaseTests
     [Fact]
     public void ExecuteQuery_NullCommandText_ThrowsArgumentNullException()
     {
-        var provider = new FakeProvider();
-        var ex = Assert.Throws<ArgumentNullException>(() => provider.ExecuteQuery(null!));
+        FakeProvider provider = new();
+        ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => provider.ExecuteQuery(null!));
         Assert.Equal("commandText", ex.ParamName);
     }
 
@@ -245,16 +254,16 @@ public class DatabaseProviderBaseTests
     [InlineData("   ")]
     public void ExecuteQuery_WhitespaceCommandText_ThrowsArgumentException(string commandText)
     {
-        var provider = new FakeProvider();
-        var ex = Assert.Throws<ArgumentException>(() => provider.ExecuteQuery(commandText));
+        FakeProvider provider = new();
+        ArgumentException ex = Assert.Throws<ArgumentException>(() => provider.ExecuteQuery(commandText));
         Assert.Equal("commandText", ex.ParamName);
     }
 
     [Fact]
     public void ExecuteNonQuery_NullCommandText_ThrowsArgumentNullException()
     {
-        var provider = new FakeProvider();
-        var ex = Assert.Throws<ArgumentNullException>(() => provider.ExecuteNonQuery(null!));
+        FakeProvider provider = new();
+        ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => provider.ExecuteNonQuery(null!));
         Assert.Equal("commandText", ex.ParamName);
     }
 
@@ -263,16 +272,16 @@ public class DatabaseProviderBaseTests
     [InlineData("   ")]
     public void ExecuteNonQuery_WhitespaceCommandText_ThrowsArgumentException(string commandText)
     {
-        var provider = new FakeProvider();
-        var ex = Assert.Throws<ArgumentException>(() => provider.ExecuteNonQuery(commandText));
+        FakeProvider provider = new();
+        ArgumentException ex = Assert.Throws<ArgumentException>(() => provider.ExecuteNonQuery(commandText));
         Assert.Equal("commandText", ex.ParamName);
     }
 
     [Fact]
     public void ExecuteProcedure_NullProcedureName_ThrowsArgumentNullException()
     {
-        var provider = new FakeProvider();
-        var ex = Assert.Throws<ArgumentNullException>(() => provider.ExecuteProcedure(null!, null));
+        FakeProvider provider = new();
+        ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => provider.ExecuteProcedure(null!, null));
         Assert.Equal("procedureName", ex.ParamName);
     }
 
@@ -281,16 +290,16 @@ public class DatabaseProviderBaseTests
     [InlineData("   ")]
     public void ExecuteProcedure_WhitespaceProcedureName_ThrowsArgumentException(string procedureName)
     {
-        var provider = new FakeProvider();
-        var ex = Assert.Throws<ArgumentException>(() => provider.ExecuteProcedure(procedureName, null));
+        FakeProvider provider = new();
+        ArgumentException ex = Assert.Throws<ArgumentException>(() => provider.ExecuteProcedure(procedureName, null));
         Assert.Equal("procedureName", ex.ParamName);
     }
 
     [Fact]
     public void ExecutePaginationProcedure_NullProcedureName_ThrowsArgumentNullException()
     {
-        var provider = new FakeProvider();
-        var ex = Assert.Throws<ArgumentNullException>(() => provider.ExecutePaginationProcedure(null!, "{}", "{}"));
+        FakeProvider provider = new();
+        ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => provider.ExecutePaginationProcedure(null!, "{}", "{}"));
         Assert.Equal("procedureName", ex.ParamName);
     }
 
@@ -299,17 +308,17 @@ public class DatabaseProviderBaseTests
     [InlineData("   ")]
     public void ExecutePaginationProcedure_WhitespaceProcedureName_ThrowsArgumentException(string procedureName)
     {
-        var provider = new FakeProvider();
-        var ex = Assert.Throws<ArgumentException>(() => provider.ExecutePaginationProcedure(procedureName, "{}", "{}"));
+        FakeProvider provider = new();
+        ArgumentException ex = Assert.Throws<ArgumentException>(() => provider.ExecutePaginationProcedure(procedureName, "{}", "{}"));
         Assert.Equal("procedureName", ex.ParamName);
     }
 
     [Fact]
     public void ExecuteProcedure_MalformedJson_DoesNotOpenConnection()
     {
-        var provider = new FakeProvider();
+        FakeProvider provider = new();
 
-        Assert.ThrowsAny<Exception>(() => provider.ExecuteProcedure("sp", "not-json"));
+        _ = Assert.ThrowsAny<Exception>(() => provider.ExecuteProcedure("sp", "not-json"));
 
         Assert.Empty(provider.CreatedConnections);
     }
@@ -317,21 +326,21 @@ public class DatabaseProviderBaseTests
     [Fact]
     public void ExecutePaginationProcedure_AppliesSelectFilter()
     {
-        var ds = new DataSet();
+        DataSet ds = new();
         ds.Tables.Add(BuildTable(["id", "name", "age"], [1, "a", 10]));
         ds.Tables.Add(BuildTable(["total"], [1]));
-        var provider = new FakeProvider { AdapterResult = ds };
-        var options = JsonSerializer.Serialize(new Dictionary<string, object>
+        FakeProvider provider = new() { AdapterResult = ds };
+        string options = JsonSerializer.Serialize(new Dictionary<string, object>
         {
             ["page"] = 1,
             ["size"] = 10,
             ["select"] = "id,age"
         });
 
-        var result = provider.ExecutePaginationProcedure("sp", options, "{}");
+        object[] result = provider.ExecutePaginationProcedure("sp", options, "{}");
 
-        var rows = Assert.IsType<KeyValuePair<string, object?>[][]>(result[1]);
-        var row = Assert.Single(rows);
+        KeyValuePair<string, object?>[][] rows = Assert.IsType<KeyValuePair<string, object?>[][]>(result[1]);
+        KeyValuePair<string, object?>[] row = Assert.Single(rows);
         Assert.Equal(2, row.Length);
         Assert.Equal("id", row[0].Key);
         Assert.Equal("age", row[1].Key);
@@ -340,11 +349,11 @@ public class DatabaseProviderBaseTests
     [Fact]
     public void Connection_WhenOpenThrows_IsDisposed()
     {
-        var provider = new FakeProvider { OpenShouldThrow = true };
+        FakeProvider provider = new() { OpenShouldThrow = true };
 
-        Assert.Throws<InvalidOperationException>(() => provider.ExecuteNonQuery("noop"));
+        _ = Assert.Throws<InvalidOperationException>(() => provider.ExecuteNonQuery("noop"));
 
-        var conn = Assert.Single(provider.CreatedConnections);
+        FakeDbConnection conn = Assert.Single(provider.CreatedConnections);
         Assert.True(conn.WasDisposed);
         Assert.False(conn.WasOpened);
     }
@@ -352,11 +361,11 @@ public class DatabaseProviderBaseTests
     [Fact]
     public void Connection_WhenOpenSucceeds_IsOpenedAndDisposed()
     {
-        var provider = new FakeProvider();
+        FakeProvider provider = new();
 
         provider.ExecuteNonQuery("noop");
 
-        var conn = Assert.Single(provider.CreatedConnections);
+        FakeDbConnection conn = Assert.Single(provider.CreatedConnections);
         Assert.True(conn.WasOpened);
         Assert.True(conn.WasDisposed);
     }

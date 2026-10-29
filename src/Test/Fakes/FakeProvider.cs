@@ -1,6 +1,6 @@
 using System.Data;
 using System.Data.Common;
-using wshcmx.Net.Providers;
+using wshcmx.Net.Database.Providers;
 
 namespace Test.Fakes;
 
@@ -14,7 +14,7 @@ internal sealed class FakeProvider(string connectionString = "fake") : DatabaseP
 
     protected override FakeDbConnection CreateConnection()
     {
-        var connection = new FakeDbConnection
+        FakeDbConnection connection = new()
         {
             OpenShouldThrow = OpenShouldThrow
         };
@@ -24,14 +24,18 @@ internal sealed class FakeProvider(string connectionString = "fake") : DatabaseP
 
     protected override DbCommand CreateTypedCommand(string commandText, FakeDbConnection connection)
     {
-        var cmd = new FakeDbCommand { CommandText = commandText, ReaderResult = ReaderResult };
+        FakeDbCommand cmd = new() { CommandText = commandText, ReaderResult = ReaderResult };
         Commands.Add(cmd);
         return cmd;
     }
 
     protected override DbParameter CreateParameter(string name, object? value)
-        => new FakeDbParameter { ParameterName = name, Value = value ?? DBNull.Value };
+    {
+        return new FakeDbParameter { ParameterName = name, Value = value ?? DBNull.Value };
+    }
 
     protected override DbDataAdapter CreateDataAdapter(DbCommand command)
-        => new FakeDbDataAdapter { FillResult = AdapterResult };
+    {
+        return new FakeDbDataAdapter { FillResult = AdapterResult };
+    }
 }

@@ -1,4 +1,4 @@
-namespace wshcmx.Net.Providers;
+namespace wshcmx.Net.Database.Providers;
 
 internal interface IDatabaseProvider
 {
